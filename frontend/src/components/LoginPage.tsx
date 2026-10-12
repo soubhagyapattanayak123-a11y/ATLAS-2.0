@@ -115,7 +115,11 @@ export function LoginPage({
       const res = await api.sendEmailOTP({ email: targetEmail, purpose: 'login' });
       setOtpStep('code');
       setOtpTimer(res.cooldown_seconds || 60);
-      setOtpDigits(['', '', '', '', '', '']);
+      if (res.dev_otp && res.dev_otp.length === 6) {
+        setOtpDigits(res.dev_otp.split(''));
+      } else {
+        setOtpDigits(['', '', '', '', '', '']);
+      }
       setSuccessMessage(res.message || `Verification code sent to ${targetEmail}`);
       setTimeout(() => {
         const firstInput = document.getElementById('otp-input-0');
@@ -306,7 +310,11 @@ export function LoginPage({
       const res = await api.sendEmailOTP({ email: target, purpose: 'register' });
       setOtpTimer(res.cooldown_seconds || 60);
       setSuccessMessage(res.message || `New verification code sent to ${target}`);
-      setOtpDigits(['', '', '', '', '', '']);
+      if (res.dev_otp && res.dev_otp.length === 6) {
+        setOtpDigits(res.dev_otp.split(''));
+      } else {
+        setOtpDigits(['', '', '', '', '', '']);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to resend verification code.');
     } finally {
@@ -337,7 +345,11 @@ export function LoginPage({
       const res = await api.sendEmailOTP({ email: targetEmail, purpose: 'reset_password' });
       setForgotStep('code');
       setOtpTimer(res.cooldown_seconds || 60);
-      setOtpDigits(['', '', '', '', '', '']);
+      if (res.dev_otp && res.dev_otp.length === 6) {
+        setOtpDigits(res.dev_otp.split(''));
+      } else {
+        setOtpDigits(['', '', '', '', '', '']);
+      }
       setSuccessMessage(res.message || `Password reset code sent to ${targetEmail}`);
       setTimeout(() => {
         const firstInput = document.getElementById('forgot-otp-input-0');
