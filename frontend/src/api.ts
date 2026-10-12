@@ -32,11 +32,60 @@ import type {
 } from './types';
 import { getUserStorageKey } from './utils/userStorage';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined'
-    ? '/api'
-    : 'http://127.0.0.1:8000/api');
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    // 1. Runtime override via window or localStorage (allows instant configuration without rebuild)
+    const runtimeUrl =
+      (window as any).__ATLAS_API_URL__ ||
+      localStorage.getItem('atlas_api_url') ||
+      localStorage.getItem('VITE_API_URL');
+    if (runtimeUrl && typeof runtimeUrl === 'string' && runtimeUrl.trim()) {
+      let clean = runtimeUrl.trim().replace(/\/+$/, '');
+      if (!clean.endsWith('/api')) clean += '/api';
+      return clean;
+    }
+  }
+
+  // 2. Build-time environment variable (Vercel / Render build)
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+    let clean = envUrl.trim().replace(/\/+$/, '');
+    if (!clean.endsWith('/api')) clean += '/api';
+    return clean;
+  }
+
+  // 3. Fallback based on browser environment
+  if (typeof window !== 'undefined') {
+    if (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '0.0.0.0'
+    ) {
+      return 'http://127.0.0.1:8000/api';
+    }
+    // Remote deployment fallback
+    return '/api';
+  }
+
+  return 'http://127.0.0.1:8000/api';
+}
+
+if (typeof window !== 'undefined') {
+  (window as any).setAtlasBackendUrl = (url: string) => {
+    if (!url || !url.trim()) {
+      localStorage.removeItem('atlas_api_url');
+      console.log('[ATLAS] Cleared custom backend URL. Reloading...');
+    } else {
+      let clean = url.trim().replace(/\/+$/, '');
+      if (!clean.endsWith('/api')) clean += '/api';
+      localStorage.setItem('atlas_api_url', clean);
+      console.log(`[ATLAS] Configured backend URL: ${clean}. Reloading...`);
+    }
+    window.location.reload();
+  };
+}
+
+const API_BASE_URL = getApiBaseUrl();
 const TOKEN_KEY = 'atlas_auth_token';
 
 function getStoredToken(): string | null {
@@ -89,7 +138,9 @@ function normalizeOdiaScript(text: string): string {
 }
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const baseUrl = getApiBaseUrl();
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${baseUrl}${cleanEndpoint}`;
   const token = getStoredToken();
 
   const headers: Record<string, string> = {
@@ -108,8 +159,8 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
       headers,
     });
   } catch (err: any) {
-    // If request failed via relative /api, attempt direct connection to backend
-    if (url.startsWith('/api')) {
+    // If request failed via relative /api, attempt direct connection to backend (local dev fallback)
+    if (url.startsWith('/api') && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       try {
         const directUrl = `http://127.0.0.1:8000${url}`;
         response = await fetch(directUrl, {
@@ -122,22 +173,45 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
         );
       }
     } else {
-      throw new Error(
-        'Unable to connect to the backend server. Please make sure the FastAPI server is running on http://127.0.0.1:8000.'
-      );
+      const isRemote = baseUrl.startsWith('http');
+      const isRender = baseUrl.includes('onrender.com');
+      let networkErr = `Unable to connect to the backend API at ${baseUrl}.`;
+      if (isRender) {
+        networkErr += ' Render free instances spin down after inactivity — please allow up to 30-45 seconds for your backend to wake up and try again.';
+      } else if (!isRemote) {
+        networkErr += ' Please ensure VITE_API_URL is configured in your deployment settings.';
+      }
+      throw new Error(networkErr);
     }
   }
 
   if (!response.ok) {
     const errorBody = await response.text();
-    let errorMessage = `HTTP error ${response.status}: ${response.statusText}`;
+    let errorMessage = `HTTP error ${response.status}: ${response.statusText || 'Request Failed'}`;
     try {
       const parsed = JSON.parse(errorBody);
       if (parsed.detail) {
         errorMessage = typeof parsed.detail === 'string' ? parsed.detail : JSON.stringify(parsed.detail);
+      } else if (parsed.message) {
+        errorMessage = typeof parsed.message === 'string' ? parsed.message : JSON.stringify(parsed.message);
+      } else if (parsed.error) {
+        errorMessage = typeof parsed.error === 'string' ? parsed.error : JSON.stringify(parsed.error);
       }
     } catch {
-      if (errorBody) errorMessage = errorBody;
+      if (errorBody && errorBody.trim() && !errorBody.includes('<!DOCTYPE') && !errorBody.includes('<html')) {
+        errorMessage = errorBody;
+      }
+    }
+
+    // Special diagnosis for Vercel 405 Method Not Allowed / 404 Rewrite when VITE_API_URL is unconfigured
+    if (
+      (response.status === 405 || response.status === 404) &&
+      typeof window !== 'undefined' &&
+      baseUrl === '/api' &&
+      (window.location.hostname.endsWith('vercel.app') || window.location.hostname.includes('vercel'))
+    ) {
+      errorMessage =
+        'Backend URL (VITE_API_URL) is not connected on Vercel. Please add VITE_API_URL (e.g. https://your-backend.onrender.com/api) in your Vercel Project Settings > Environment Variables, and Redeploy.';
     }
 
     // Auto clear token if unauthorized

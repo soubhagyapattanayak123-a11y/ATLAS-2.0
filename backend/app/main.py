@@ -209,6 +209,7 @@ def get_optional_current_user(
 # ==========================================
 
 @app.post("/api/auth/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED, tags=["Auth"])
+@app.post("/auth/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED, tags=["Auth"], include_in_schema=False)
 def register_account(user_in: UserRegister, conn: sqlite3.Connection = Depends(get_db)):
     """Create a new user account with unique username and email. Requires mandatory email OTP verification."""
     # Check existing username
@@ -260,6 +261,7 @@ def register_account(user_in: UserRegister, conn: sqlite3.Connection = Depends(g
 
 
 @app.post("/api/auth/login", response_model=AuthResponse, tags=["Auth"])
+@app.post("/auth/login", response_model=AuthResponse, tags=["Auth"], include_in_schema=False)
 def login_account(credentials: UserLogin, conn: sqlite3.Connection = Depends(get_db)):
     """Log in using username or email and password."""
     user = get_user_by_identifier(conn, credentials.username_or_email)
@@ -290,6 +292,7 @@ def login_account(credentials: UserLogin, conn: sqlite3.Connection = Depends(get
 
 
 @app.post("/api/auth/send-otp", response_model=OTPStatusResponse, tags=["Auth"])
+@app.post("/auth/send-otp", response_model=OTPStatusResponse, tags=["Auth"], include_in_schema=False)
 def send_email_otp(payload: SendOTPRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Generate and dispatch a cryptographically secure 6-digit OTP to user's email."""
     clean_email = payload.email.strip().lower()
@@ -341,6 +344,7 @@ def send_email_otp(payload: SendOTPRequest, conn: sqlite3.Connection = Depends(g
 
 
 @app.post("/api/auth/verify-otp", response_model=AuthResponse, tags=["Auth"])
+@app.post("/auth/verify-otp", response_model=AuthResponse, tags=["Auth"], include_in_schema=False)
 def verify_email_otp(payload: VerifyOTPRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Verify submitted 6-digit OTP, authenticate existing user or auto-provision account, and return bearer session token."""
     success, message, _ = verify_and_consume_otp(
@@ -368,6 +372,7 @@ def verify_email_otp(payload: VerifyOTPRequest, conn: sqlite3.Connection = Depen
 
 
 @app.post("/api/auth/reset-password", response_model=AuthResponse, tags=["Auth"])
+@app.post("/auth/reset-password", response_model=AuthResponse, tags=["Auth"], include_in_schema=False)
 def reset_password_with_otp(payload: ResetPasswordRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Verify 6-digit OTP code, reset user account password, and return bearer session token."""
     clean_email = payload.email.strip().lower()
@@ -416,12 +421,14 @@ def reset_password_with_otp(payload: ResetPasswordRequest, conn: sqlite3.Connect
 
 
 @app.get("/api/auth/me", response_model=UserResponse, tags=["Auth"])
+@app.get("/auth/me", response_model=UserResponse, tags=["Auth"], include_in_schema=False)
 def read_current_user_profile(user: dict = Depends(get_current_user)):
     """Retrieve details of the currently authenticated user."""
     return UserResponse(**user)
 
 
 @app.post("/api/auth/logout", tags=["Auth"])
+@app.post("/auth/logout", tags=["Auth"], include_in_schema=False)
 def logout_account(
     authorization: Optional[str] = Header(None),
     conn: sqlite3.Connection = Depends(get_db),
@@ -434,12 +441,14 @@ def logout_account(
 
 
 @app.get("/api/auth/demo-accounts", response_model=List[DemoAccountInfo], tags=["Auth"])
+@app.get("/auth/demo-accounts", response_model=List[DemoAccountInfo], tags=["Auth"], include_in_schema=False)
 def list_demo_accounts():
     """Retrieve available demo profiles for quick evaluation."""
     return get_demo_accounts()
 
 
 @app.put("/api/auth/profile", response_model=UserResponse, tags=["Auth"])
+@app.put("/auth/profile", response_model=UserResponse, tags=["Auth"], include_in_schema=False)
 def update_profile(
     profile_data: UserProfileUpdate,
     user: dict = Depends(get_current_user),
@@ -466,6 +475,7 @@ def update_profile(
 
 
 @app.post("/api/auth/change-password", tags=["Auth"])
+@app.post("/auth/change-password", tags=["Auth"], include_in_schema=False)
 def change_password(
     password_data: UserPasswordChange,
     user: dict = Depends(get_current_user),
@@ -490,6 +500,7 @@ def change_password(
 # ==========================================
 
 @app.get("/api/health", response_model=HealthResponse, tags=["System"])
+@app.get("/health", response_model=HealthResponse, tags=["System"], include_in_schema=False)
 def health_check(conn: sqlite3.Connection = Depends(get_db)):
     """Health check endpoint confirming system operational status and SQLite connectivity."""
     cursor = conn.cursor()

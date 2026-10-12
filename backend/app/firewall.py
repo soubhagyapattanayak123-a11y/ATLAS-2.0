@@ -366,6 +366,10 @@ class FirewallMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next):
+        # Fast-pass for CORS preflight OPTIONS requests so browser handshakes never stall
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         firewall_engine.total_inspected_requests += 1
 
         # 1. Resolve client IP

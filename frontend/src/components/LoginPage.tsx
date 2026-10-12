@@ -623,9 +623,40 @@ export function LoginPage({
 
           {/* Feedback Alerts */}
           {error && (
-            <div className="login-feedback-box error">
-              <AlertCircle size={16} />
-              <span>{error}</span>
+            <div className="login-feedback-box error" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                <span>{error}</span>
+              </div>
+              {(error.includes('VITE_API_URL') || error.includes('Backend URL') || error.includes('405')) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentUrl = localStorage.getItem('atlas_api_url') || '';
+                    const entered = prompt(
+                      'Enter your Render backend API URL (e.g. https://your-backend.onrender.com/api):',
+                      currentUrl || 'https://'
+                    );
+                    if (entered && entered.trim() && (window as any).setAtlasBackendUrl) {
+                      (window as any).setAtlasBackendUrl(entered.trim());
+                    }
+                  }}
+                  style={{
+                    alignSelf: 'flex-start',
+                    padding: '4px 10px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    background: '#ef4444',
+                    color: '#ffffff',
+                    border: 'none',
+                    cursor: 'pointer',
+                    marginTop: '2px',
+                  }}
+                >
+                  ⚡ Connect Backend URL Now
+                </button>
+              )}
             </div>
           )}
 
