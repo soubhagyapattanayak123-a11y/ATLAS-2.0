@@ -116,7 +116,7 @@ export interface SendOTPResponse {
   email: string;
   expires_in_seconds: number;
   cooldown_seconds: number;
-  delivered_via: 'smtp' | 'console';
+  delivered_via: string;
   dev_otp?: string | null;
 }
 

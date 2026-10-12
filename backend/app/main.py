@@ -327,28 +327,24 @@ def send_email_otp(payload: SendOTPRequest, conn: sqlite3.Connection = Depends(g
     # Save to database (invalidates any previous active OTPs for this email)
     record_email_otp(conn, clean_email, otp_code, purpose=payload.purpose, expires_minutes=10)
 
-    # Dispatch via SMTP (or dev console fallback)
+    # Dispatch via email service
     result = send_otp_email(clean_email, otp_code, purpose=payload.purpose)
 
-    # If delivery via SMTP failed (e.g. Render free tier blocks outbound SMTP ports),
-    # gracefully surface the code so user/evaluator is never locked out
-    allow_dev_otp = os.getenv("ALLOW_DEV_OTP_RESPONSE", "true").lower() in ("true", "1", "yes")
-    response_msg = result.get("message", "Verification code sent to your email.")
-    dev_otp_val = None
-
-    if result.get("delivered_via") == "console" or result.get("error"):
-        if allow_dev_otp:
-            response_msg = f"Verification Code: {otp_code} (Render free tier blocks SMTP port 587; code auto-provided)"
-            dev_otp_val = otp_code
+    if not result.get("success"):
+        logger.error(f"[OTP SEND FAILED] Could not deliver OTP to {clean_email}: {result.get('error')}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to send verification code to your email. Please try again or verify email configuration.",
+        )
 
     return OTPStatusResponse(
         status="success",
-        message=response_msg,
+        message=f"A 6-digit verification code has been sent to {clean_email}. Please check your inbox.",
         email=clean_email,
         expires_in_seconds=600,
         cooldown_seconds=60,
-        delivered_via=result.get("delivered_via", "smtp"),
-        dev_otp=dev_otp_val,
+        delivered_via=result.get("delivered_via", "email"),
+        dev_otp=None,
     )
 
 
