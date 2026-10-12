@@ -2,7 +2,7 @@ import json
 import os
 import re
 import urllib.request
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Tuple
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
