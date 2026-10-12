@@ -1,0 +1,28 @@
+services:
+  atlas-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: atlas-2.0
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-ATLAS 2.0 Security}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
+      - SECRET_KEY=${SECRET_KEY}
+      - SECURITY_PEPPER=${SECURITY_PEPPER}
+      - ALLOW_DEV_OTP_RESPONSE=false
+    volumes:
+      # Persistent SQLite database volume so data is saved across container restarts
+      - atlas-data:/app/backend/data
+    environment:
+      - DATABASE_FILE=/app/backend/data/atlas.db
+
+volumes:
+  atlas-data:

@@ -1,0 +1,13 @@
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - User asks: "What is gravity?"
+   - User specifies: "Write your answer in Odia (ଓଡ଼ିଆରେ ଲେଖନ୍ତୁ)."
+   - The system prompt already sets the constraint: "You are a teacher. The user speaks Odia. You must write your entire answer in Odia language using Odia script (ଓଡ଼ିଆ)."
+
+2.  **Identify Core Task:**
+   - Explain what gravity is in Odia language, using Odia script.
+
+3.  **Formulate Answer in Odia:**
+   - I need to translate "What is gravity?" and provide a definition/explanation in Odia.
+   - Key concepts: Gravity

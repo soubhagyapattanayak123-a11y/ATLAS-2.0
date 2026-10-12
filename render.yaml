@@ -1,0 +1,37 @@
+services:
+  # ========================================================
+  # ATLAS 2.0 - FastAPI Backend Web Service
+  # ========================================================
+  - type: web
+    name: atlas-backend
+    env: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: ALLOW_DEV_OTP_RESPONSE
+        value: false
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_NAME
+        value: ATLAS 2.0 Security
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SECURITY_PEPPER
+        generateValue: true

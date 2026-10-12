@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/env/
+venv/
+env/
+scratch/
+*.mp3
+dev_output.txt
+# Environment & Secrets (Defense against credential leaks)
+.env
+*.env
+**/.env
+backend/.env
+*.pem
+*.key
+*.cert
+*.log
+
+# SQLite Databases & Storage
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+backend/*.db
+backend/*.db*
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+.vite/
+*.local
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
