@@ -334,10 +334,11 @@ def send_email_otp(payload: SendOTPRequest, conn: sqlite3.Connection = Depends(g
     result = send_otp_email(clean_email, otp_code, purpose=payload.purpose)
 
     if not result.get("success"):
-        logger.error(f"[OTP SEND FAILED] Could not deliver OTP to {clean_email}: {result.get('error')}")
+        error_detail = result.get("error") or "Failed to send verification code to your email. Please verify server email configuration."
+        logger.error(f"[OTP SEND FAILED] Could not deliver OTP to {clean_email}: {error_detail}")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to send verification code to your email. Please try again or verify email configuration.",
+            detail=error_detail,
         )
 
     return OTPStatusResponse(
