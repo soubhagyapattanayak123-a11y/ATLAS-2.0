@@ -1,10 +1,13 @@
 import os
 import sqlite3
+import logging
 from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import List, Optional
 from dotenv import load_dotenv
+
+logger = logging.getLogger("atlas.main")
 
 # Ensure backend/.env is loaded into environment
 _env_path = Path(__file__).resolve().parent.parent / ".env"

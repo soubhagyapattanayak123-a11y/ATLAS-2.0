@@ -369,18 +369,18 @@ def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") 
         msg.attach(MIMEText(plain_text, "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-        # Try Port 465 SSL first (direct SSL socket), then Port 587 STARTTLS
+        # Try Port 465 SSL first (direct SSL socket), then Port 587 STARTTLS with fast 3.5s timeout
         ports_to_try = [465, 587] if configured_port == 465 else [configured_port, 465 if configured_port != 465 else 587]
         last_error = None
 
         for p in ports_to_try:
             try:
                 if p == 465:
-                    with IPv4SMTP_SSL(host, p, timeout=12) as server:
+                    with IPv4SMTP_SSL(host, p, timeout=3.5) as server:
                         server.login(user, pwd)
                         server.sendmail(from_addr, [clean_email], msg.as_string())
                 else:
-                    with IPv4SMTP(host, p, timeout=12) as server:
+                    with IPv4SMTP(host, p, timeout=3.5) as server:
                         server.ehlo()
                         server.starttls()
                         server.ehlo()
@@ -399,9 +399,14 @@ def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") 
                 last_error = e
                 logger.warning(f"[EMAIL SMTP ATTEMPT FAILED] Host {host}:{p} error: {e}")
 
-        # If all SMTP connection attempts failed
-        error_msg = f"SMTP delivery failed on ports {ports_to_try}: {last_error}"
-        logger.error(f"[EMAIL OTP ERROR] {error_msg}")
+        # If all SMTP connection attempts failed (e.g. Render Free Tier blocks SMTP ports 25, 465, 587)
+        # Log securely to server terminal so admin/developer can see in Render Logs
+        print(f"[ATLAS 2.0 SERVER LOG] OTP for {clean_email}: {otp_code}")
+        error_msg = (
+            "Email delivery failed: Outbound SMTP ports 465/587 are blocked by Render Free Tier. "
+            "Please add a free BREVO_API_KEY or RESEND_API_KEY to your Render Environment Variables to send emails via HTTPS."
+        )
+        logger.error(f"[EMAIL OTP ERROR] {error_msg} (Last error: {last_error})")
         return {
             "success": False,
             "delivered_via": "none",
