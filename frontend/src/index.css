@@ -14784,3 +14784,870 @@ html.theme-high-contrast {
   margin-top: 0.5rem;
 }
 
+/* ========================================================================= */
+/* ATLAS 2.0 MULTI-THEME SYSTEM                                             */
+/* Themes: Dark (Cosmic), Light (Academic), Cyberpunk, Emerald, Amber        */
+/* ========================================================================= */
+
+/* Quick Header Theme Toggle Button */
+.btn-theme-quick-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #6366f1;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-theme-quick-toggle:hover {
+  background: rgba(99, 102, 241, 0.16);
+  border-color: #6366f1;
+  color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.theme-toggle-label {
+  font-size: 0.775rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+/* Theme Picker Grid in Settings */
+.theme-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 0.85rem;
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.theme-card-option {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  outline: none;
+}
+
+.theme-card-option:hover {
+  transform: translateY(-2px);
+  border-color: #94a3b8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.theme-card-option.active {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px #6366f1, 0 8px 20px rgba(99, 102, 241, 0.18);
+}
+
+.theme-card-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.theme-preview-palette {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.theme-color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  display: inline-block;
+}
+
+.theme-selected-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: #6366f1;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+}
+
+.theme-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.theme-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: inherit;
+  margin: 0;
+}
+
+.theme-card-description {
+  font-size: 0.775rem;
+  color: #64748b;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.theme-palette-icon {
+  color: #6366f1;
+}
+
+/* ------------------------------------------------------------------------- */
+/* 1. COSMIC DARK THEME (theme-dark)                                         */
+/* ------------------------------------------------------------------------- */
+html.theme-dark,
+body[data-theme="dark"],
+.academic-app-wrapper.theme-dark {
+  background-color: #0b0f19 !important;
+  color: #f8fafc !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-top-header {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-app-title {
+  color: #f1f5f9 !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-lang-selector {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.academic-app-wrapper.theme-dark .lang-select-dropdown {
+  color: #f8fafc !important;
+  background: #1e293b !important;
+}
+
+.academic-app-wrapper.theme-dark .btn-academic-subtle {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+
+.academic-app-wrapper.theme-dark .btn-academic-subtle:hover {
+  background: #334155 !important;
+  color: #ffffff !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-main-container {
+  background: #0d121f !important;
+  border-color: #1e293b !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-nav-btn {
+  color: #94a3b8 !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-nav-btn:hover {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-nav-btn.active {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4) !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-subview-card,
+.academic-app-wrapper.theme-dark .academic-stat-card,
+.academic-app-wrapper.theme-dark .academic-feature-card,
+.academic-app-wrapper.theme-dark .academic-week-card,
+.academic-app-wrapper.theme-dark .academic-privacy-card {
+  background: #111827 !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-section-heading {
+  color: #f1f5f9 !important;
+}
+
+.academic-app-wrapper.theme-dark .subview-subtitle {
+  color: #94a3b8 !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-textarea-field,
+.academic-app-wrapper.theme-dark .academic-input-field,
+.academic-app-wrapper.theme-dark textarea {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-stat-value {
+  color: #818cf8 !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-stat-label {
+  color: #94a3b8 !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-card-title {
+  color: #f1f5f9 !important;
+}
+
+.academic-app-wrapper.theme-dark .academic-card-desc {
+  color: #94a3b8 !important;
+}
+
+.academic-app-wrapper.theme-dark .settings-row {
+  border-bottom-color: #1e293b !important;
+}
+
+.academic-app-wrapper.theme-dark .settings-row h4 {
+  color: #f1f5f9 !important;
+}
+
+.academic-app-wrapper.theme-dark .settings-row p {
+  color: #94a3b8 !important;
+}
+
+.academic-app-wrapper.theme-dark .segmented-picker {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.academic-app-wrapper.theme-dark .seg-btn {
+  color: #94a3b8 !important;
+}
+
+.academic-app-wrapper.theme-dark .seg-btn.active {
+  background: #334155 !important;
+  color: #ffffff !important;
+}
+
+.academic-app-wrapper.theme-dark .theme-card-option {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.academic-app-wrapper.theme-dark .theme-card-option:hover {
+  border-color: #6366f1 !important;
+}
+
+.academic-app-wrapper.theme-dark .theme-card-option.active {
+  border-color: #818cf8 !important;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.25) !important;
+}
+
+.academic-app-wrapper.theme-dark .theme-card-description {
+  color: #94a3b8 !important;
+}
+
+.academic-app-wrapper.theme-dark .question-answer-box {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.academic-app-wrapper.theme-dark .history-activity-card {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+/* ------------------------------------------------------------------------- */
+/* 2. LIGHT ACADEMIC THEME (theme-light)                                     */
+/* ------------------------------------------------------------------------- */
+html.theme-light,
+body[data-theme="light"],
+.academic-app-wrapper.theme-light {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.academic-app-wrapper.theme-light .academic-top-header {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.academic-app-wrapper.theme-light .academic-main-container {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.academic-app-wrapper.theme-light .academic-subview-card,
+.academic-app-wrapper.theme-light .academic-stat-card,
+.academic-app-wrapper.theme-light .academic-feature-card,
+.academic-app-wrapper.theme-light .academic-week-card,
+.academic-app-wrapper.theme-light .academic-privacy-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.academic-app-wrapper.theme-light .theme-card-option {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.academic-app-wrapper.theme-light .theme-card-option.active {
+  border-color: #1456cb !important;
+  box-shadow: 0 0 0 1px #1456cb, 0 4px 12px rgba(20, 86, 203, 0.15) !important;
+}
+
+.academic-app-wrapper.theme-light .theme-selected-pill {
+  background: #1456cb !important;
+}
+
+/* ------------------------------------------------------------------------- */
+/* 3. CYBERPUNK GLOW THEME (theme-cyberpunk)                                 */
+/* ------------------------------------------------------------------------- */
+html.theme-cyberpunk,
+body[data-theme="cyberpunk"],
+.academic-app-wrapper.theme-cyberpunk {
+  background-color: #050508 !important;
+  color: #f0f6fc !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-top-header {
+  background: #080910 !important;
+  border-color: #1a1b2e !important;
+  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.12) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-app-title {
+  color: #38bdf8 !important;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-lang-selector {
+  background: #0d0f1c !important;
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .lang-select-dropdown {
+  color: #38bdf8 !important;
+  background: #0d0f1c !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .btn-academic-subtle {
+  background: #0d0f1c !important;
+  border-color: #2a2d45 !important;
+  color: #38bdf8 !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .btn-academic-subtle:hover {
+  background: #16182c !important;
+  border-color: #06b6d4 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.35) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .btn-theme-quick-toggle {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border-color: #06b6d4 !important;
+  color: #06b6d4 !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-main-container {
+  background: #07080f !important;
+  border-color: #1a1b2e !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-nav-btn {
+  color: #8b949e !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-nav-btn:hover {
+  background: #131525 !important;
+  color: #38bdf8 !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-nav-btn.active {
+  background: linear-gradient(135deg, #06b6d4, #ec4899) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.5) !important;
+  border: none !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-subview-card,
+.academic-app-wrapper.theme-cyberpunk .academic-stat-card,
+.academic-app-wrapper.theme-cyberpunk .academic-feature-card,
+.academic-app-wrapper.theme-cyberpunk .academic-week-card,
+.academic-app-wrapper.theme-cyberpunk .academic-privacy-card {
+  background: #0c0d16 !important;
+  border-color: #1a1b2e !important;
+  color: #f0f6fc !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-stat-card:hover,
+.academic-app-wrapper.theme-cyberpunk .academic-feature-card:hover {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.25) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-section-heading {
+  color: #38bdf8 !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .subview-subtitle {
+  color: #93c5fd !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-textarea-field,
+.academic-app-wrapper.theme-cyberpunk .academic-input-field,
+.academic-app-wrapper.theme-cyberpunk textarea {
+  background: #0d0f1c !important;
+  border-color: #06b6d4 !important;
+  color: #f0f6fc !important;
+  box-shadow: inset 0 0 8px rgba(6, 182, 212, 0.15) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-stat-value {
+  color: #06b6d4 !important;
+  text-shadow: 0 0 10px rgba(6, 182, 212, 0.5) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-stat-label {
+  color: #8b949e !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-card-title {
+  color: #f0f6fc !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .academic-card-desc {
+  color: #8b949e !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .settings-row {
+  border-bottom-color: #1a1b2e !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .settings-row h4 {
+  color: #38bdf8 !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .settings-row p {
+  color: #8b949e !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .segmented-picker {
+  background: #0d0f1c !important;
+  border-color: #1a1b2e !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .seg-btn {
+  color: #8b949e !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .seg-btn.active {
+  background: #06b6d4 !important;
+  color: #050508 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.4) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .theme-card-option {
+  background: #0d0f1c !important;
+  border-color: #1a1b2e !important;
+  color: #f0f6fc !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .theme-card-option:hover {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.25) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .theme-card-option.active {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.35) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .theme-selected-pill {
+  background: linear-gradient(135deg, #06b6d4, #ec4899) !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .theme-card-description {
+  color: #8b949e !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .question-answer-box {
+  background: #0d0f1c !important;
+  border-color: #1a1b2e !important;
+}
+
+.academic-app-wrapper.theme-cyberpunk .history-activity-card {
+  background: #0d0f1c !important;
+  border-color: #1a1b2e !important;
+  color: #f0f6fc !important;
+}
+
+/* ------------------------------------------------------------------------- */
+/* 4. EMERALD EYE-CARE THEME (theme-emerald)                                  */
+/* ------------------------------------------------------------------------- */
+html.theme-emerald,
+body[data-theme="emerald"],
+.academic-app-wrapper.theme-emerald {
+  background-color: #061a14 !important;
+  color: #ecfdf5 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-top-header {
+  background: #09241c !important;
+  border-color: #154236 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-app-title {
+  color: #a7f3d0 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-lang-selector {
+  background: #0d3126 !important;
+  border-color: #154236 !important;
+}
+
+.academic-app-wrapper.theme-emerald .lang-select-dropdown {
+  color: #ecfdf5 !important;
+  background: #0d3126 !important;
+}
+
+.academic-app-wrapper.theme-emerald .btn-academic-subtle {
+  background: #0d3126 !important;
+  border-color: #154236 !important;
+  color: #a7f3d0 !important;
+}
+
+.academic-app-wrapper.theme-emerald .btn-academic-subtle:hover {
+  background: #154236 !important;
+  color: #ffffff !important;
+}
+
+.academic-app-wrapper.theme-emerald .btn-theme-quick-toggle {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-main-container {
+  background: #071f18 !important;
+  border-color: #154236 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-nav-btn {
+  color: #6ee7b7 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-nav-btn:hover {
+  background: #0d3126 !important;
+  color: #ffffff !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-nav-btn.active {
+  background: #059669 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4) !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-subview-card,
+.academic-app-wrapper.theme-emerald .academic-stat-card,
+.academic-app-wrapper.theme-emerald .academic-feature-card,
+.academic-app-wrapper.theme-emerald .academic-week-card,
+.academic-app-wrapper.theme-emerald .academic-privacy-card {
+  background: #0c2820 !important;
+  border-color: #154236 !important;
+  color: #ecfdf5 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-stat-card:hover,
+.academic-app-wrapper.theme-emerald .academic-feature-card:hover {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25) !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-section-heading {
+  color: #a7f3d0 !important;
+}
+
+.academic-app-wrapper.theme-emerald .subview-subtitle {
+  color: #6ee7b7 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-textarea-field,
+.academic-app-wrapper.theme-emerald .academic-input-field,
+.academic-app-wrapper.theme-emerald textarea {
+  background: #0b2b20 !important;
+  border-color: #154236 !important;
+  color: #ecfdf5 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-stat-value {
+  color: #34d399 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-stat-label {
+  color: #6ee7b7 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-card-title {
+  color: #ecfdf5 !important;
+}
+
+.academic-app-wrapper.theme-emerald .academic-card-desc {
+  color: #6ee7b7 !important;
+}
+
+.academic-app-wrapper.theme-emerald .settings-row {
+  border-bottom-color: #154236 !important;
+}
+
+.academic-app-wrapper.theme-emerald .settings-row h4 {
+  color: #a7f3d0 !important;
+}
+
+.academic-app-wrapper.theme-emerald .settings-row p {
+  color: #6ee7b7 !important;
+}
+
+.academic-app-wrapper.theme-emerald .segmented-picker {
+  background: #0d3126 !important;
+  border-color: #154236 !important;
+}
+
+.academic-app-wrapper.theme-emerald .seg-btn {
+  color: #6ee7b7 !important;
+}
+
+.academic-app-wrapper.theme-emerald .seg-btn.active {
+  background: #059669 !important;
+  color: #ffffff !important;
+}
+
+.academic-app-wrapper.theme-emerald .theme-card-option {
+  background: #0c2820 !important;
+  border-color: #154236 !important;
+  color: #ecfdf5 !important;
+}
+
+.academic-app-wrapper.theme-emerald .theme-card-option:hover {
+  border-color: #10b981 !important;
+}
+
+.academic-app-wrapper.theme-emerald .theme-card-option.active {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3) !important;
+}
+
+.academic-app-wrapper.theme-emerald .theme-selected-pill {
+  background: #059669 !important;
+}
+
+.academic-app-wrapper.theme-emerald .theme-card-description {
+  color: #6ee7b7 !important;
+}
+
+.academic-app-wrapper.theme-emerald .question-answer-box {
+  background: #0c2820 !important;
+  border-color: #154236 !important;
+}
+
+.academic-app-wrapper.theme-emerald .history-activity-card {
+  background: #0c2820 !important;
+  border-color: #154236 !important;
+  color: #ecfdf5 !important;
+}
+
+/* ------------------------------------------------------------------------- */
+/* 5. WARM AMBER THEME (theme-amber)                                         */
+/* ------------------------------------------------------------------------- */
+html.theme-amber,
+body[data-theme="amber"],
+.academic-app-wrapper.theme-amber {
+  background-color: #15100a !important;
+  color: #fef3c7 !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-top-header {
+  background: #1c150e !important;
+  border-color: #38291b !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-app-title {
+  color: #fde68a !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-lang-selector {
+  background: #261d14 !important;
+  border-color: #38291b !important;
+}
+
+.academic-app-wrapper.theme-amber .lang-select-dropdown {
+  color: #fef3c7 !important;
+  background: #261d14 !important;
+}
+
+.academic-app-wrapper.theme-amber .btn-academic-subtle {
+  background: #261d14 !important;
+  border-color: #38291b !important;
+  color: #fde68a !important;
+}
+
+.academic-app-wrapper.theme-amber .btn-academic-subtle:hover {
+  background: #38291b !important;
+  color: #ffffff !important;
+}
+
+.academic-app-wrapper.theme-amber .btn-theme-quick-toggle {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-main-container {
+  background: #18120b !important;
+  border-color: #38291b !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-nav-btn {
+  color: #d97706 !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-nav-btn:hover {
+  background: #261d14 !important;
+  color: #fef3c7 !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-nav-btn.active {
+  background: #d97706 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4) !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-subview-card,
+.academic-app-wrapper.theme-amber .academic-stat-card,
+.academic-app-wrapper.theme-amber .academic-feature-card,
+.academic-app-wrapper.theme-amber .academic-week-card,
+.academic-app-wrapper.theme-amber .academic-privacy-card {
+  background: #211a12 !important;
+  border-color: #38291b !important;
+  color: #fef3c7 !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-stat-card:hover,
+.academic-app-wrapper.theme-amber .academic-feature-card:hover {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25) !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-section-heading {
+  color: #fde68a !important;
+}
+
+.academic-app-wrapper.theme-amber .subview-subtitle {
+  color: #f59e0b !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-textarea-field,
+.academic-app-wrapper.theme-amber .academic-input-field,
+.academic-app-wrapper.theme-amber textarea {
+  background: #271f16 !important;
+  border-color: #38291b !important;
+  color: #fef3c7 !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-stat-value {
+  color: #fbbf24 !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-stat-label {
+  color: #d97706 !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-card-title {
+  color: #fef3c7 !important;
+}
+
+.academic-app-wrapper.theme-amber .academic-card-desc {
+  color: #d97706 !important;
+}
+
+.academic-app-wrapper.theme-amber .settings-row {
+  border-bottom-color: #38291b !important;
+}
+
+.academic-app-wrapper.theme-amber .settings-row h4 {
+  color: #fde68a !important;
+}
+
+.academic-app-wrapper.theme-amber .settings-row p {
+  color: #d97706 !important;
+}
+
+.academic-app-wrapper.theme-amber .segmented-picker {
+  background: #261d14 !important;
+  border-color: #38291b !important;
+}
+
+.academic-app-wrapper.theme-amber .seg-btn {
+  color: #d97706 !important;
+}
+
+.academic-app-wrapper.theme-amber .seg-btn.active {
+  background: #d97706 !important;
+  color: #ffffff !important;
+}
+
+.academic-app-wrapper.theme-amber .theme-card-option {
+  background: #211a12 !important;
+  border-color: #38291b !important;
+  color: #fef3c7 !important;
+}
+
+.academic-app-wrapper.theme-amber .theme-card-option:hover {
+  border-color: #f59e0b !important;
+}
+
+.academic-app-wrapper.theme-amber .theme-card-option.active {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3) !important;
+}
+
+.academic-app-wrapper.theme-amber .theme-selected-pill {
+  background: #d97706 !important;
+}
+
+.academic-app-wrapper.theme-amber .theme-card-description {
+  color: #d97706 !important;
+}
+
+.academic-app-wrapper.theme-amber .question-answer-box {
+  background: #211a12 !important;
+  border-color: #38291b !important;
+}
+
+.academic-app-wrapper.theme-amber .history-activity-card {
+  background: #211a12 !important;
+  border-color: #38291b !important;
+  color: #fef3c7 !important;
+}
+
+

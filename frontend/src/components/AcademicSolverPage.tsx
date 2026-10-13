@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Globe,
   Volume2,
@@ -31,6 +31,7 @@ import {
   Play,
   Pause,
   Square,
+  Palette,
 } from 'lucide-react';
 import type { User, ItemStats, FlashcardItem, LearningActivity, ActivityType, DailyVoiceTopic } from '../types';
 import { api, logLearningActivity, loadAllLearningActivities } from '../api';
@@ -71,6 +72,8 @@ export type AcademicActiveTab =
   | 'battle-quiz'
   | 'history'
   | 'settings';
+
+export type ThemeMode = 'dark' | 'light' | 'cyberpunk' | 'emerald' | 'amber';
 
 interface AcademicSolverPageProps {
   currentUser: User | null;
@@ -248,6 +251,19 @@ export function AcademicSolverPage({
       doubleClickVoiceSettingTitle: 'Double-Click Screen for Voice Access',
       doubleClickVoiceSettingDesc: 'Double-click anywhere on the screen (any side) or double-tap to activate multilingual voice input',
       voiceAccessActivatedToast: '🎙️ Voice Access Activated',
+      themeOptionTitle: 'Theme & Appearance',
+      themeOptionDesc: 'Select your preferred visual style and color ambiance',
+      themeDarkTitle: 'Cosmic Dark',
+      themeDarkDesc: 'Deep slate & space indigo neon',
+      themeLightTitle: 'Light Academic',
+      themeLightDesc: 'Clean daytime classroom study mode',
+      themeCyberpunkTitle: 'Cyberpunk Glow',
+      themeCyberpunkDesc: 'Pure OLED black with vivid cyan & pink',
+      themeEmeraldTitle: 'Emerald Eye-Care',
+      themeEmeraldDesc: 'Soothing forest green reducing fatigue',
+      themeAmberTitle: 'Warm Amber',
+      themeAmberDesc: 'Cozy golden sepia for late-night reading',
+      themeActiveBadge: 'ACTIVE',
     },
     Hindi: {
       appTitle: 'सुलभ शैक्षणिक समस्या समाधानकर्ता',
@@ -369,6 +385,19 @@ export function AcademicSolverPage({
       doubleClickVoiceSettingTitle: 'ध्वनि पहुंच के लिए स्क्रीन पर डबल-क्लिक करें',
       doubleClickVoiceSettingDesc: 'स्क्रीन पर कहीं भी (किसी भी तरफ) डबल-क्लिक या डबल-टैप करके तुरंत बोलकर खोजें',
       voiceAccessActivatedToast: '🎙️ ध्वनि पहुंच सक्रिय (Voice Activated)',
+      themeOptionTitle: 'थीम और उपस्थिति',
+      themeOptionDesc: 'अपनी पसंदीदा दृश्य शैली और रंग वातावरण चुनें',
+      themeDarkTitle: 'कॉस्मिक डार्क',
+      themeDarkDesc: 'गहरा स्लेट और इंडिगो नियॉन',
+      themeLightTitle: 'लाइट एकेडमिक',
+      themeLightDesc: 'स्वच्छ दिन का अध्ययन मोड',
+      themeCyberpunkTitle: 'साइबरपंक ग्लो',
+      themeCyberpunkDesc: 'ओलेड ब्लैक और जीवंत सियान/गुलाबी',
+      themeEmeraldTitle: 'एमराल्ड आई-केयर',
+      themeEmeraldDesc: 'आंखों की थकान कम करने वाला हरा रंग',
+      themeAmberTitle: 'वार्म एम्बर',
+      themeAmberDesc: 'आरामदायक सेपिया और सुनहरा पठन मोड',
+      themeActiveBadge: 'सक्रिय',
     },
     Odia: {
       appTitle: 'ସୁଗମ ଶିକ୍ଷାଗତ ସମସ୍ୟା ସମାଧାନକାରୀ',
@@ -490,10 +519,73 @@ export function AcademicSolverPage({
       doubleClickVoiceSettingTitle: 'ଭଏସ୍ ଆକ୍ସେସ୍ ପାଇଁ ସ୍କ୍ରିନ୍ରେ ଡବଲ୍-କ୍ଲିକ୍',
       doubleClickVoiceSettingDesc: 'ସ୍କ୍ରିନ୍ର ଯେକୌଣସି ପାର୍ଶ୍ୱରେ ଡବଲ୍-କ୍ଲିକ୍ ବା ଡବଲ୍-ଟ୍ୟାପ୍ କରି ତୁରନ୍ତ ବହୁଭାଷୀ ଭଏସ୍ ଇନପୁଟ୍ ସକ୍ରିୟ କରନ୍ତୁ',
       voiceAccessActivatedToast: '🎙️ ଭଏସ୍ ଆକ୍ସେସ୍ ସକ୍ରିୟ (Voice Activated)',
+      themeOptionTitle: 'ଥିମ୍ ଏବଂ ଦୃଶ୍ୟମାନତା',
+      themeOptionDesc: 'ଆପଣଙ୍କ ପସନ୍ଦର ରଙ୍ଗ ଏବଂ ଭିଜୁଆଲ୍ ଶୈଳୀ ଚୟନ କରନ୍ତୁ',
+      themeDarkTitle: 'କସମିକ୍ ଡାର୍କ',
+      themeDarkDesc: 'ଗାଢ଼ ସ୍ଲେଟ୍ ଏବଂ ଇଣ୍ଡିଗୋ ନିଅନ୍',
+      themeLightTitle: 'ଲାଇଟ୍ ଏକାଡେମିକ୍',
+      themeLightDesc: 'ପରିଷ୍କାର ଦିନବେଳା ଅଧ୍ୟୟନ ମୋଡ୍',
+      themeCyberpunkTitle: 'ସାଇବରପଙ୍କ୍ ଗ୍ଲୋ',
+      themeCyberpunkDesc: 'OLED କଳା ସହ ସ୍ୟାନ୍ ଏବଂ ପିଙ୍କ୍',
+      themeEmeraldTitle: 'ଏମରାଲ୍ଡ ଆଖି-ଯତ୍ନ',
+      themeEmeraldDesc: 'ଆଖି ଥକାପଣ ଦୂର କରିବା ପାଇଁ ଶାନ୍ତ ସବୁଜ',
+      themeAmberTitle: 'ୱାର୍ମ ଆମ୍ବର',
+      themeAmberDesc: 'ଆରାମଦାୟକ ସୁନେଲି ସେପିଆ ପଠନ ମୋଡ୍',
+      themeActiveBadge: 'ସକ୍ରିୟ',
     },
   };
 
   const t = translations[selectedLanguage];
+
+  const themeOptions = useMemo<Array<{
+    id: ThemeMode;
+    title: string;
+    description: string;
+    dotBg: string;
+    dotCard: string;
+    dotAccent: string;
+  }>>(() => [
+    {
+      id: 'dark',
+      title: t.themeDarkTitle,
+      description: t.themeDarkDesc,
+      dotBg: '#0b0f19',
+      dotCard: '#111827',
+      dotAccent: '#6366f1',
+    },
+    {
+      id: 'light',
+      title: t.themeLightTitle,
+      description: t.themeLightDesc,
+      dotBg: '#f1f5f9',
+      dotCard: '#ffffff',
+      dotAccent: '#1456cb',
+    },
+    {
+      id: 'cyberpunk',
+      title: t.themeCyberpunkTitle,
+      description: t.themeCyberpunkDesc,
+      dotBg: '#050508',
+      dotCard: '#0c0d14',
+      dotAccent: '#06b6d4',
+    },
+    {
+      id: 'emerald',
+      title: t.themeEmeraldTitle,
+      description: t.themeEmeraldDesc,
+      dotBg: '#061a14',
+      dotCard: '#0c2820',
+      dotAccent: '#10b981',
+    },
+    {
+      id: 'amber',
+      title: t.themeAmberTitle,
+      description: t.themeAmberDesc,
+      dotBg: '#1c1611',
+      dotCard: '#261e17',
+      dotAccent: '#f59e0b',
+    },
+  ], [t]);
 
   // User display name from database (full_name or capitalized username)
   const displayName =
@@ -916,6 +1008,23 @@ Passage: (The 2-3 spoken sentences)`;
       setIsGeneratingDailyTopic(false);
     }
   };
+
+  // Theme & Appearance State with localStorage persistence
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => {
+    const saved = localStorage.getItem('atlas_theme') as ThemeMode;
+    return saved && ['dark', 'light', 'cyberpunk', 'emerald', 'amber'].includes(saved)
+      ? saved
+      : 'dark';
+  });
+
+  // Sync active theme to document.documentElement attributes and classes
+  useEffect(() => {
+    localStorage.setItem('atlas_theme', currentTheme);
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    const themeClasses = ['theme-dark', 'theme-light', 'theme-cyberpunk', 'theme-emerald', 'theme-amber'];
+    themeClasses.forEach((cls) => document.documentElement.classList.remove(cls));
+    document.documentElement.classList.add(`theme-${currentTheme}`);
+  }, [currentTheme]);
 
   // Accessibility Settings State with localStorage persistence
   const [fontSize, setFontSize] = useState<'normal' | 'large' | 'xlarge'>(() => {
@@ -1763,9 +1872,10 @@ Passage: (The 2-3 spoken sentences)`;
 
   return (
     <div
-      className={`academic-app-wrapper ${dyslexicFont ? 'font-dyslexic' : ''} ${
+      className={`academic-app-wrapper theme-${currentTheme} ${dyslexicFont ? 'font-dyslexic' : ''} ${
         highContrast ? 'theme-high-contrast' : ''
       } text-size-${fontSize}`}
+      data-theme={currentTheme}
     >
       {/* ========================================================================= */}
       {/* TOP HEADER: Matches Image Exactly                                        */}
@@ -1801,6 +1911,24 @@ Passage: (The 2-3 spoken sentences)`;
 
           {/* User Account / Navigation Shortcuts */}
           <div className="academic-header-actions">
+            {/* Quick Theme Toggle Header Action */}
+            <button
+              id="header-btn-theme-toggle"
+              type="button"
+              className="btn-academic-subtle btn-theme-quick-toggle"
+              onClick={() => {
+                const themes: ThemeMode[] = ['dark', 'light', 'cyberpunk', 'emerald', 'amber'];
+                const nextIdx = (themes.indexOf(currentTheme) + 1) % themes.length;
+                setCurrentTheme(themes[nextIdx]);
+              }}
+              title={`Switch Theme (Current: ${currentTheme.toUpperCase()})`}
+            >
+              <Palette size={15} />
+              <span className="theme-toggle-label">
+                {currentTheme === 'dark' ? 'Dark' : currentTheme === 'light' ? 'Light' : currentTheme === 'cyberpunk' ? 'Cyber' : currentTheme === 'emerald' ? 'Emerald' : 'Amber'}
+              </span>
+            </button>
+
             {/* Quick Access Multilingual Voice Access Header Action */}
             <button
               id="header-btn-voice-access"
@@ -4703,6 +4831,54 @@ Passage: (The 2-3 spoken sentences)`;
               </div>
 
               <div className="settings-items-group">
+                {/* Theme & Appearance Option */}
+                <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.9rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.65rem' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Palette size={18} className="theme-palette-icon" />
+                        <h4 style={{ margin: 0 }}>{t.themeOptionTitle}</h4>
+                        <span className="badge-new-feature">5 Styles</span>
+                      </div>
+                      <p style={{ margin: '0.25rem 0 0 0' }}>{t.themeOptionDesc}</p>
+                    </div>
+                  </div>
+
+                  <div className="theme-picker-grid">
+                    {themeOptions.map((opt) => {
+                      const isSelected = currentTheme === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          className={`theme-card-option ${isSelected ? 'active' : ''}`}
+                          onClick={() => setCurrentTheme(opt.id)}
+                          aria-pressed={isSelected}
+                          title={`${opt.title}: ${opt.description}`}
+                        >
+                          <div className="theme-card-preview-header">
+                            <div className="theme-preview-palette">
+                              <span className="theme-color-dot" style={{ backgroundColor: opt.dotBg }} title="Background" />
+                              <span className="theme-color-dot" style={{ backgroundColor: opt.dotCard }} title="Card Surface" />
+                              <span className="theme-color-dot" style={{ backgroundColor: opt.dotAccent }} title="Accent Glow" />
+                            </div>
+                            {isSelected && (
+                              <span className="theme-selected-pill">
+                                <Check size={12} />
+                                <span>{t.themeActiveBadge}</span>
+                              </span>
+                            )}
+                          </div>
+                          <div className="theme-card-info">
+                            <div className="theme-card-title">{opt.title}</div>
+                            <div className="theme-card-description">{opt.description}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Font Size Option */}
                 <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.85rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.65rem' }}>
