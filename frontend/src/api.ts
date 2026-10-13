@@ -63,11 +63,10 @@ export function getApiBaseUrl(): string {
     ) {
       return 'http://127.0.0.1:8000/api';
     }
-    // Remote deployment fallback
-    return '/api';
   }
 
-  return 'http://127.0.0.1:8000/api';
+  // Universal production fallback for all remote devices (mobile, tablet, desktop, incognito)
+  return 'https://atlas-2-0-zf9q.onrender.com/api';
 }
 
 if (typeof window !== 'undefined') {
