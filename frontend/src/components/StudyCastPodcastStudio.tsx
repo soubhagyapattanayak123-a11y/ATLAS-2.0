@@ -13,6 +13,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { api } from '../api';
+import { odiaToDevanagari, cleanTextForSpeech } from '../utils/speechUtils';
 
 export interface DialogueTurn {
   speaker: 'host' | 'guest';
@@ -401,7 +402,9 @@ export const StudyCastPodcastStudio: React.FC<StudyCastProps> = ({
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(turn.text);
+    const cleanTurnText = cleanTextForSpeech(turn.text);
+    const textToSpeak = selectedLanguage === 'Odia' ? odiaToDevanagari(cleanTurnText) : cleanTurnText;
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.rate = playbackSpeed;
 
     // Distinguish voices: Guest professor is deeper/slower, Host student is slightly higher pitch

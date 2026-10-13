@@ -27,6 +27,11 @@ import { api, logLearningActivity, type ScanPdfResponse } from '../api';
 import type { QuizQuestion } from '../types';
 import { IndicVirtualKeyboard, type IndicLanguage } from './IndicVirtualKeyboard';
 import { VoiceAccessModal } from './VoiceAccessModal';
+import {
+  preUnlockAudio,
+  cleanTextForSpeech,
+  speakWithBrowserFallback,
+} from '../utils/speechUtils';
 
 interface PdfScannerProps {
   selectedLanguage: 'English' | 'Hindi' | 'Odia';
@@ -348,8 +353,9 @@ Question 2: Why is photorespiration considered a wasteful process in C3 plants?`
   };
 
   // Audio Text-to-Speech Playback with Play / Pause & Resume
-  const handleSpeak = async (text: string, target: 'text' | 'qa' | 'explain' | 'quiz') => {
-    if (!text || !text.trim()) return;
+  const handleSpeak = async (rawText: string, target: 'text' | 'qa' | 'explain' | 'quiz') => {
+    const text = cleanTextForSpeech(rawText.trim());
+    if (!text) return;
 
     // If currently speaking this target, pause it
     if (isSpeaking && audioTarget === target) {
@@ -366,7 +372,12 @@ Question 2: Why is photorespiration considered a wasteful process in C3 plants?`
     // If currently paused on this target, resume it
     if (isPaused && audioTarget === target) {
       if (audioPlayerRef.current) {
-        await audioPlayerRef.current.play();
+        audioPlayerRef.current.play().catch(() => {
+          speakWithBrowserFallback(text, selectedLanguage, {
+            onStart: () => { setIsSpeaking(true); setIsPaused(false); setAudioTarget(target); },
+            onEnd: () => { setIsSpeaking(false); setIsPaused(false); setAudioTarget(null); },
+          });
+        });
         setIsSpeaking(true);
         setIsPaused(false);
         return;
@@ -378,8 +389,9 @@ Question 2: Why is photorespiration considered a wasteful process in C3 plants?`
       }
     }
 
-    // Start fresh playback
+    // Start fresh playback: stop previous and synchronously pre-unlock audio for mobile
     stopAudio();
+    audioPlayerRef.current = preUnlockAudio(audioPlayerRef.current);
     setIsSpeaking(true);
     setIsPaused(false);
     setAudioTarget(target);
@@ -387,15 +399,17 @@ Question 2: Why is photorespiration considered a wasteful process in C3 plants?`
     try {
       const blob = await api.fetchTTSAudioBlob(text, selectedLanguage);
       const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
+      const audio = audioPlayerRef.current || new Audio();
       audioPlayerRef.current = audio;
+      audio.pause();
+      audio.src = url;
+      audio.currentTime = 0;
 
       audio.onended = () => {
         setIsSpeaking(false);
         setIsPaused(false);
         setAudioTarget(null);
         URL.revokeObjectURL(url);
-        audioPlayerRef.current = null;
       };
 
       audio.onerror = () => {
@@ -403,31 +417,20 @@ Question 2: Why is photorespiration considered a wasteful process in C3 plants?`
         setIsPaused(false);
         setAudioTarget(null);
         URL.revokeObjectURL(url);
-        audioPlayerRef.current = null;
+        speakWithBrowserFallback(text, selectedLanguage, {
+          onStart: () => { setIsSpeaking(true); setIsPaused(false); setAudioTarget(target); },
+          onEnd: () => { setIsSpeaking(false); setIsPaused(false); setAudioTarget(null); },
+        });
       };
 
       await audio.play();
     } catch (err) {
       console.warn('TTS playback failed, trying browser synthesis fallback:', err);
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = selectedLanguage === 'Odia' ? 'hi-IN' : selectedLanguage === 'Hindi' ? 'hi-IN' : 'en-US';
-        u.onend = () => {
-          setIsSpeaking(false);
-          setIsPaused(false);
-          setAudioTarget(null);
-        };
-        u.onerror = () => {
-          setIsSpeaking(false);
-          setIsPaused(false);
-          setAudioTarget(null);
-        };
-        window.speechSynthesis.speak(u);
-      } else {
-        setIsSpeaking(false);
-        setIsPaused(false);
-        setAudioTarget(null);
-      }
+      speakWithBrowserFallback(text, selectedLanguage, {
+        onStart: () => { setIsSpeaking(true); setIsPaused(false); setAudioTarget(target); },
+        onEnd: () => { setIsSpeaking(false); setIsPaused(false); setAudioTarget(null); },
+        onError: () => { setIsSpeaking(false); setIsPaused(false); setAudioTarget(null); },
+      });
     }
   };
 

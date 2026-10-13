@@ -43,6 +43,11 @@ import {
 import { IndicVirtualKeyboard, type IndicLanguage } from './IndicVirtualKeyboard';
 import { VoiceAccessModal } from './VoiceAccessModal';
 import { playVoiceAccessChime } from '../utils/soundEffects';
+import {
+  preUnlockAudio,
+  cleanTextForSpeech,
+  speakWithBrowserFallback,
+} from '../utils/speechUtils';
 import { ImageScanner } from './ImageScanner';
 import { PdfScanner } from './PdfScanner';
 import { DAILY_VOICE_TOPICS } from '../data/dailyVoiceTopics';
@@ -51,37 +56,6 @@ import { StudyCastPodcastStudio } from './StudyCastPodcastStudio';
 import { KnowledgeGraphExplorer } from './KnowledgeGraphExplorer';
 import { BattleOfBrainsArena } from './BattleOfBrainsArena';
 import { MathGraphVisualizer } from './MathGraphVisualizer';
-
-// Client-side phonetic mapping for Odia characters to Devanagari for browser SpeechSynthesis
-const ODIA_DEV_MAP: Record<number, number> = {
-  0x0b5c: 0x095c, // ଡ଼ -> ड़
-  0x0b5d: 0x095d, // ଢ଼ -> ढ़
-  0x0b5f: 0x092f, // ୟ -> य
-  0x0b71: 0x0935, // ୱ -> व
-  0x0b33: 0x0933, // ଳ -> ळ
-  0x0b3d: 0x093d, // ଽ -> ऽ
-  0x0b02: 0x0902, // ଂ -> ं
-  0x0b03: 0x0903, // ଃ -> ः
-  0x0b01: 0x0901, // ଁ -> ँ
-  0x0b4d: 0x094d, // ୍ -> ्
-};
-
-function odiaToDevanagari(text: string): string {
-  const chars: string[] = [];
-  for (let i = 0; i < text.length; i++) {
-    const cp = text.charCodeAt(i);
-    if (ODIA_DEV_MAP[cp]) {
-      chars.push(String.fromCharCode(ODIA_DEV_MAP[cp]));
-    } else if (cp >= 0x0b66 && cp <= 0x0b6f) {
-      chars.push(String.fromCharCode(0x0966 + (cp - 0x0b66)));
-    } else if (cp >= 0x0b00 && cp <= 0x0b7f) {
-      chars.push(String.fromCharCode(cp - 0x0b00 + 0x0900));
-    } else {
-      chars.push(text[i]);
-    }
-  }
-  return chars.join('');
-}
 
 export type AcademicActiveTab =
   | 'home'
@@ -1249,17 +1223,22 @@ Passage: (The 2-3 spoken sentences)`;
     };
   }, [doubleClickVoiceEnabled, activeTab]);
 
-  const handleVoiceSearch = (spokenText: string) => {
+  const handleVoiceSearch = (spokenText: string, lang?: 'English' | 'Hindi' | 'Odia') => {
     setVoiceModalOpen(false);
     if (!spokenText.trim()) return;
 
+    if (lang && lang !== selectedLanguage) {
+      setSelectedLanguage(lang);
+    }
+    const targetLang = lang || selectedLanguage;
+
     if (voiceModalMode === 'question') {
       setQuestionInput(spokenText);
-      handleAskQuestion(spokenText);
+      handleAskQuestion(spokenText, targetLang);
       setActiveTab('ask-question');
     } else if (voiceModalMode === 'math') {
       setMathInput(spokenText);
-      handleSolveMath(spokenText);
+      handleSolveMath(spokenText, targetLang);
       setActiveTab('solve-math');
     } else if (voiceModalMode === 'voice') {
       setVoiceText(spokenText);
@@ -1273,13 +1252,14 @@ Passage: (The 2-3 spoken sentences)`;
   };
 
   // Solve a math problem using OpenRouter AI
-  const handleSolveMath = async (customProblem?: string) => {
+  const handleSolveMath = async (customProblem?: string, customLang?: 'English' | 'Hindi' | 'Odia') => {
     const raw = (customProblem ?? mathInput).trim();
     if (!raw || isSolving) return;
 
+    const langToUse = customLang || selectedLanguage;
     setIsSolving(true);
     try {
-      const solution = await api.solveMath(raw, selectedLanguage);
+      const solution = await api.solveMath(raw, langToUse);
       setMathSolution(solution);
       setProblemsSolved((prev) => {
         const next = prev + 1;
@@ -1297,7 +1277,7 @@ Passage: (The 2-3 spoken sentences)`;
         title: raw,
         details: solution.result ? `Result: ${solution.result}` : 'Math problem solved',
         solution: `${solution.result}\n\nStep-by-Step:\n${(solution.steps || []).join('\n')}`,
-        language: selectedLanguage,
+        language: langToUse,
       });
     } catch (err) {
       console.error('Failed to solve math problem:', err);
@@ -1317,7 +1297,7 @@ Passage: (The 2-3 spoken sentences)`;
         title: raw,
         details: 'Calculation complete',
         solution: `Result: Calculation complete\n\nSteps:\n1. Expressed equation: ${raw}\n2. Applied order of operations and isolated variable\n3. Verified algebraic equality`,
-        language: selectedLanguage,
+        language: langToUse,
       });
     } finally {
       setIsSolving(false);
@@ -1325,13 +1305,14 @@ Passage: (The 2-3 spoken sentences)`;
   };
 
   // Ask Question Handler using OpenRouter AI
-  const handleAskQuestion = async (customQ?: string) => {
+  const handleAskQuestion = async (customQ?: string, customLang?: 'English' | 'Hindi' | 'Odia') => {
     const q = (customQ ?? questionInput).trim();
     if (!q || isAsking) return;
 
+    const langToUse = customLang || selectedLanguage;
     setIsAsking(true);
     try {
-      const answer = await api.askQuestion(q, selectedLanguage);
+      const answer = await api.askQuestion(q, langToUse);
       setQuestionAnswer(answer);
       setProblemsSolved((prev) => {
         const next = prev + 1;
@@ -1344,14 +1325,14 @@ Passage: (The 2-3 spoken sentences)`;
         title: q,
         details: answer.slice(0, 150) + (answer.length > 150 ? '...' : ''),
         solution: answer,
-        language: selectedLanguage,
+        language: langToUse,
       });
     } catch (err) {
       console.error('Failed to ask question:', err);
       setQuestionAnswer(
-        selectedLanguage === 'Odia'
+        langToUse === 'Odia'
           ? 'କ୍ଷମା କରିବେ, ଏହି ମୁହୂର୍ତ୍ତରେ ଉତ୍ତର ପ୍ରସ୍ତୁତ କରିବାରେ ଅସୁବିଧା ହେଲା। ଦୟାକରି ପୁନର୍ବାର ଚେଷ୍ଟା କରନ୍ତୁ।'
-          : selectedLanguage === 'Hindi'
+          : langToUse === 'Hindi'
           ? 'क्षमा करें, इस समय उत्तर तैयार करने में समस्या आई। कृपया पुनः प्रयास करें।'
           : 'Unable to generate answer at this moment. Please check your connection and try again.'
       );
@@ -1522,72 +1503,28 @@ Passage: (The 2-3 spoken sentences)`;
 
   // Browser speech fallback if network audio has issues
   const fallbackBrowserSpeak = (text: string) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) {
-      setIsSpeaking(false);
-      setIsPaused(false);
-      setIsAudioLoading(false);
-      setCurrentSpeakingText('');
-      setAudioError('Speech audio is not supported in this browser.');
-      return;
-    }
-
-    try {
-      window.speechSynthesis.cancel();
-      // For Odia: Phonetically transliterate to Devanagari so Indian browser voice engines can read it
-      const textToSpeak = selectedLanguage === 'Odia' ? odiaToDevanagari(text) : text;
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.rate = speechRate;
-
-      // Smart voice assignment
-      const voices = window.speechSynthesis.getVoices();
-      if (selectedLanguage === 'Hindi' || selectedLanguage === 'Odia') {
-        const indVoice = voices.find(
-          (v) =>
-            v.lang.toLowerCase().startsWith('hi') ||
-            v.lang.toLowerCase().startsWith('or') ||
-            v.name.toLowerCase().includes('hindi') ||
-            v.name.toLowerCase().includes('odia') ||
-            v.name.toLowerCase().includes('india')
-        );
-        if (indVoice) utterance.voice = indVoice;
-        utterance.lang = 'hi-IN';
-      } else {
-        utterance.lang = 'en-US';
-      }
-
-      utterance.onstart = () => {
+    speakWithBrowserFallback(text, selectedLanguage, {
+      rate: speechRate,
+      onStart: () => {
         setIsSpeaking(true);
         setIsPaused(false);
         setIsAudioLoading(false);
-      };
-
-      utterance.onend = () => {
+      },
+      onEnd: () => {
         setIsSpeaking(false);
         setIsPaused(false);
         setCurrentSpeakingText('');
         setHighlightWordIndex(null);
-      };
-
-      utterance.onerror = (e) => {
-        console.error('Browser speech error:', e);
+      },
+      onError: (err) => {
+        console.warn('Browser speech fallback error:', err);
         setIsSpeaking(false);
         setIsPaused(false);
         setIsAudioLoading(false);
         setCurrentSpeakingText('');
-        setAudioError('Audio playback was interrupted. Please try again.');
-      };
-
-      setIsSpeaking(true);
-      setIsPaused(false);
-      window.speechSynthesis.speak(utterance);
-    } catch (e) {
-      console.error('Speech synthesis initialization failed:', e);
-      setIsSpeaking(false);
-      setIsPaused(false);
-      setIsAudioLoading(false);
-      setCurrentSpeakingText('');
-      setAudioError('Unable to synthesize voice audio.');
-    }
+        setAudioError('Voice playback was interrupted or unsupported. Please check device volume.');
+      },
+    });
   };
 
   // Main universal Play/Pause toggle handler for any AI speaker
@@ -1609,7 +1546,9 @@ Passage: (The 2-3 spoken sentences)`;
     // 2. If currently paused on this exact text -> RESUME
     if (isPaused && currentSpeakingText === cleanText) {
       if (audioPlayerRef.current) {
-        audioPlayerRef.current.play();
+        audioPlayerRef.current.play().catch(() => {
+          fallbackBrowserSpeak(cleanText);
+        });
         setIsPaused(false);
         setIsSpeaking(true);
         return;
@@ -1621,8 +1560,10 @@ Passage: (The 2-3 spoken sentences)`;
       }
     }
 
-    // 3. Otherwise, stop existing and start speaking new text
+    // 3. Otherwise, stop existing, pre-unlock audio for mobile, and start speaking new text
     stopAudio();
+    // Synchronously pre-unlock audio on user gesture before async fetch starts
+    audioPlayerRef.current = preUnlockAudio(audioPlayerRef.current);
     await startSpeakCustom(cleanText);
   };
 
@@ -1633,15 +1574,26 @@ Passage: (The 2-3 spoken sentences)`;
     setCurrentSpeakingText(cleanText);
     setIsPaused(false);
 
-    try {
-      // 1. Fetch MP3 audio blob via POST /api/tts/speak (eliminates HTTP 431 header-too-large errors)
-      const blob = await api.fetchTTSAudioBlob(cleanText, selectedLanguage);
-      const audioUrl = URL.createObjectURL(blob);
-      const audio = new Audio(audioUrl);
-      audio.playbackRate = speechRate;
-      audioPlayerRef.current = audio;
+    // Clean markdown, LaTeX, and symbols for natural spoken speech
+    const speechCleanedText = cleanTextForSpeech(cleanText);
+    if (!speechCleanedText) {
+      setIsAudioLoading(false);
+      return;
+    }
 
-      const words = cleanText.split(/\s+/).filter(Boolean);
+    try {
+      // 1. Fetch MP3 audio blob via POST /api/tts/speak (eliminates URI length restrictions)
+      const blob = await api.fetchTTSAudioBlob(speechCleanedText, selectedLanguage);
+      const audioUrl = URL.createObjectURL(blob);
+      
+      const audio = audioPlayerRef.current || new Audio();
+      audioPlayerRef.current = audio;
+      audio.pause();
+      audio.src = audioUrl;
+      audio.playbackRate = speechRate;
+      audio.currentTime = 0;
+
+      const words = speechCleanedText.split(/\s+/).filter(Boolean);
 
       audio.oncanplay = () => {
         setIsAudioLoading(false);
@@ -1667,20 +1619,18 @@ Passage: (The 2-3 spoken sentences)`;
         setCurrentSpeakingText('');
         setHighlightWordIndex(null);
         URL.revokeObjectURL(audioUrl);
-        audioPlayerRef.current = null;
       };
 
       audio.onerror = () => {
         console.warn('Network audio stream failed, falling back to browser speech synthesis...');
         URL.revokeObjectURL(audioUrl);
-        audioPlayerRef.current = null;
-        fallbackBrowserSpeak(cleanText);
+        fallbackBrowserSpeak(speechCleanedText);
       };
 
       await audio.play();
     } catch (err) {
       console.warn('Audio play threw an exception, falling back to browser speech:', err);
-      fallbackBrowserSpeak(cleanText);
+      fallbackBrowserSpeak(speechCleanedText);
     }
   };
 
@@ -2737,7 +2687,12 @@ Passage: (The 2-3 spoken sentences)`;
 
                   <div className="solution-voice-toolbar" style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     {(() => {
-                      const mathStepsText = `Here is the step by step solution. ${mathSolution.steps.join('. ')}. Final answer: ${mathSolution.result}`;
+                      const mathStepsText =
+                        selectedLanguage === 'Odia'
+                          ? `ଏଠାରେ ପଦକ୍ଷେପ ଅନୁଯାୟୀ ସମାଧାନ ଦିଆଗଲା। ${mathSolution.steps.join('। ')}। ଚୂଡ଼ାନ୍ତ ଉତ୍ତର: ${mathSolution.result}`
+                          : selectedLanguage === 'Hindi'
+                          ? `यहाँ चरण-दर-चरण समाधान दिया गया है। ${mathSolution.steps.join('। ')}। अंतिम उत्तर: ${mathSolution.result}`
+                          : `Here is the step by step solution. ${mathSolution.steps.join('. ')}. Final answer: ${mathSolution.result}`;
                       const isPlayingThis = isSpeaking && !isPaused && currentSpeakingText === mathStepsText;
                       const isPausedThis = isPaused && currentSpeakingText === mathStepsText;
                       return (
@@ -2751,17 +2706,23 @@ Passage: (The 2-3 spoken sentences)`;
                             {isPlayingThis ? (
                               <>
                                 <Pause size={16} />
-                                <span>Pause Steps</span>
+                                <span>{selectedLanguage === 'Odia' ? '⏸ ବିରତି (Pause)' : selectedLanguage === 'Hindi' ? '⏸ रोकें (Pause)' : 'Pause Steps'}</span>
                               </>
                             ) : isPausedThis ? (
                               <>
                                 <Play size={16} />
-                                <span>Resume Steps</span>
+                                <span>{selectedLanguage === 'Odia' ? '▶ ଚଲାନ୍ତୁ (Resume)' : selectedLanguage === 'Hindi' ? '▶ जारी रखें (Resume)' : 'Resume Steps'}</span>
                               </>
                             ) : (
                               <>
                                 <Volume2 size={16} />
-                                <span>Speak Steps Aloud</span>
+                                <span>
+                                  {selectedLanguage === 'Odia'
+                                    ? '🔊 ଓଡ଼ିଆ ସ୍ୱରରେ ଶୁଣନ୍ତୁ (Listen Steps)'
+                                    : selectedLanguage === 'Hindi'
+                                    ? '🔊 आवाज़ में सुनें (Listen Steps)'
+                                    : 'Speak Steps Aloud'}
+                                </span>
                               </>
                             )}
                           </button>
@@ -2775,7 +2736,7 @@ Passage: (The 2-3 spoken sentences)`;
                               title="Stop Audio"
                             >
                               <Square size={14} />
-                              <span>Stop</span>
+                              <span>{selectedLanguage === 'Odia' ? 'ବନ୍ଦ' : selectedLanguage === 'Hindi' ? 'बंद' : 'Stop'}</span>
                             </button>
                           )}
                         </>
@@ -2788,9 +2749,13 @@ Passage: (The 2-3 spoken sentences)`;
                       style={{ background: '#f8fafc', color: '#475569', borderColor: '#cbd5e1' }}
                       onClick={() => {
                         stopAudio();
-                        setVoiceText(
-                          `Here is the step by step solution. ${mathSolution.steps.join('. ')}. Final answer: ${mathSolution.result}`
-                        );
+                        const mathStepsText =
+                          selectedLanguage === 'Odia'
+                            ? `ଏଠାରେ ପଦକ୍ଷେପ ଅନୁଯାୟୀ ସମାଧାନ ଦିଆଗଲା। ${mathSolution.steps.join('। ')}। ଚୂଡ଼ାନ୍ତ ଉତ୍ତର: ${mathSolution.result}`
+                            : selectedLanguage === 'Hindi'
+                            ? `यहाँ चरण-दर-चरण समाधान दिया गया है। ${mathSolution.steps.join('। ')}। अंतिम उत्तर: ${mathSolution.result}`
+                            : `Here is the step by step solution. ${mathSolution.steps.join('. ')}. Final answer: ${mathSolution.result}`;
+                        setVoiceText(mathStepsText);
                         setActiveTab('voice-learning');
                       }}
                       title="Open in Voice Studio"

@@ -27,6 +27,11 @@ import { api, logLearningActivity, type ScanImageResponse } from '../api';
 import type { QuizQuestion } from '../types';
 import { IndicVirtualKeyboard, type IndicLanguage } from './IndicVirtualKeyboard';
 import { VoiceAccessModal } from './VoiceAccessModal';
+import {
+  preUnlockAudio,
+  cleanTextForSpeech,
+  speakWithBrowserFallback,
+} from '../utils/speechUtils';
 
 interface ImageScannerProps {
   selectedLanguage: 'English' | 'Hindi' | 'Odia';
@@ -424,8 +429,9 @@ export const ImageScanner: React.FC<ImageScannerProps> = ({
   };
 
   // Audio Text-to-Speech Playback with Play / Pause & Resume
-  const handleSpeak = async (text: string, target: 'text' | 'qa' | 'explain' | 'quiz') => {
-    if (!text.trim()) return;
+  const handleSpeak = async (rawText: string, target: 'text' | 'qa' | 'explain' | 'quiz') => {
+    const text = cleanTextForSpeech(rawText.trim());
+    if (!text) return;
 
     // If currently speaking this target, pause it
     if (isSpeaking && audioTarget === target) {
@@ -442,7 +448,12 @@ export const ImageScanner: React.FC<ImageScannerProps> = ({
     // If currently paused on this target, resume it
     if (isPaused && audioTarget === target) {
       if (audioPlayerRef.current) {
-        await audioPlayerRef.current.play();
+        audioPlayerRef.current.play().catch(() => {
+          speakWithBrowserFallback(text, selectedLanguage, {
+            onStart: () => { setIsSpeaking(true); setIsPaused(false); setAudioTarget(target); },
+            onEnd: () => { setIsSpeaking(false); setIsPaused(false); setAudioTarget(null); },
+          });
+        });
         setIsSpeaking(true);
         setIsPaused(false);
         return;
@@ -454,8 +465,9 @@ export const ImageScanner: React.FC<ImageScannerProps> = ({
       }
     }
 
-    // Start fresh playback
+    // Start fresh playback: stop previous and synchronously pre-unlock audio for mobile
     stopAudio();
+    audioPlayerRef.current = preUnlockAudio(audioPlayerRef.current);
     setIsSpeaking(true);
     setIsPaused(false);
     setAudioTarget(target);
@@ -463,15 +475,17 @@ export const ImageScanner: React.FC<ImageScannerProps> = ({
     try {
       const blob = await api.fetchTTSAudioBlob(text, selectedLanguage);
       const audioUrl = URL.createObjectURL(blob);
-      const audio = new Audio(audioUrl);
+      const audio = audioPlayerRef.current || new Audio();
       audioPlayerRef.current = audio;
+      audio.pause();
+      audio.src = audioUrl;
+      audio.currentTime = 0;
 
       audio.onended = () => {
         setIsSpeaking(false);
         setIsPaused(false);
         setAudioTarget(null);
         URL.revokeObjectURL(audioUrl);
-        audioPlayerRef.current = null;
       };
 
       audio.onerror = () => {
@@ -479,31 +493,20 @@ export const ImageScanner: React.FC<ImageScannerProps> = ({
         setIsPaused(false);
         setAudioTarget(null);
         URL.revokeObjectURL(audioUrl);
-        audioPlayerRef.current = null;
+        speakWithBrowserFallback(text, selectedLanguage, {
+          onStart: () => { setIsSpeaking(true); setIsPaused(false); setAudioTarget(target); },
+          onEnd: () => { setIsSpeaking(false); setIsPaused(false); setAudioTarget(null); },
+        });
       };
 
       await audio.play();
     } catch (err) {
       console.warn('TTS playback error, trying browser synthesis fallback:', err);
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = selectedLanguage === 'Odia' ? 'hi-IN' : selectedLanguage === 'Hindi' ? 'hi-IN' : 'en-US';
-        u.onend = () => {
-          setIsSpeaking(false);
-          setIsPaused(false);
-          setAudioTarget(null);
-        };
-        u.onerror = () => {
-          setIsSpeaking(false);
-          setIsPaused(false);
-          setAudioTarget(null);
-        };
-        window.speechSynthesis.speak(u);
-      } else {
-        setIsSpeaking(false);
-        setIsPaused(false);
-        setAudioTarget(null);
-      }
+      speakWithBrowserFallback(text, selectedLanguage, {
+        onStart: () => { setIsSpeaking(true); setIsPaused(false); setAudioTarget(target); },
+        onEnd: () => { setIsSpeaking(false); setIsPaused(false); setAudioTarget(null); },
+        onError: () => { setIsSpeaking(false); setIsPaused(false); setAudioTarget(null); },
+      });
     }
   };
 

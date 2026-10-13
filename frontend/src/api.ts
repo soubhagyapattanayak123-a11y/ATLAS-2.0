@@ -84,7 +84,7 @@ if (typeof window !== 'undefined') {
   };
 }
 
-const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = getApiBaseUrl();
 const TOKEN_KEY = 'atlas_auth_token';
 
 function getStoredToken(): string | null {
@@ -730,7 +730,7 @@ Return ONLY the raw JSON array without markdown or extra commentary.`;
     let langCode = 'en';
     if (l.includes('odia') || l === 'or' || l === 'or-in') langCode = 'or';
     else if (l.includes('hindi') || l === 'hi' || l === 'hi-in') langCode = 'hi';
-    return `${API_BASE_URL}/tts/speak?lang=${langCode}&text=${encoded}`;
+    return `${getApiBaseUrl()}/tts/speak?lang=${langCode}&text=${encoded}`;
   },
 
   async fetchTTSAudioBlob(text: string, lang: string): Promise<Blob> {
@@ -739,9 +739,11 @@ Return ONLY the raw JSON array without markdown or extra commentary.`;
     if (l.includes('odia') || l === 'or' || l === 'or-in') langCode = 'or';
     else if (l.includes('hindi') || l === 'hi' || l === 'hi-in') langCode = 'hi';
 
+    const baseUrl = getApiBaseUrl();
+
     // 1. Try POST request with JSON payload to avoid HTTP 431 URI-too-long limits
     try {
-      const postRes = await fetch(`${API_BASE_URL}/tts/speak`, {
+      const postRes = await fetch(`${baseUrl}/tts/speak`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, lang: langCode }),
@@ -755,7 +757,7 @@ Return ONLY the raw JSON array without markdown or extra commentary.`;
 
     // 2. Fallback to GET request
     const encoded = encodeURIComponent(text.slice(0, 500));
-    const getRes = await fetch(`${API_BASE_URL}/tts/speak?lang=${langCode}&text=${encoded}`);
+    const getRes = await fetch(`${baseUrl}/tts/speak?lang=${langCode}&text=${encoded}`);
     if (!getRes.ok) {
       throw new Error(`TTS generation returned status ${getRes.status}`);
     }

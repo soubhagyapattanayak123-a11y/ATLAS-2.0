@@ -6,7 +6,7 @@ interface VoiceAccessModalProps {
   language: 'English' | 'Hindi' | 'Odia';
   mode: 'question' | 'math' | 'voice' | 'geography';
   initialText?: string;
-  onSearchSolution: (spokenText: string) => void;
+  onSearchSolution: (spokenText: string, lang?: 'English' | 'Hindi' | 'Odia') => void;
   onClose: () => void;
 }
 
@@ -102,7 +102,11 @@ export const VoiceAccessModal: React.FC<VoiceAccessModalProps> = ({
 
     try {
       if (recognitionRef.current) {
-        recognitionRef.current.abort();
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
       }
 
       const rec = new SpeechRec();
@@ -140,16 +144,27 @@ export const VoiceAccessModal: React.FC<VoiceAccessModalProps> = ({
       rec.onerror = (event: any) => {
         console.warn('[Speech Recognition Event]', event.error);
         if (event.error === 'not-allowed') {
-          setErrorMessage('Microphone access was denied. Please allow microphone permissions.');
+          setErrorMessage('Microphone access was denied. Please allow microphone permissions in browser settings.');
           setIsListening(false);
         } else if (event.error === 'language-not-supported') {
           // Fallback to secondary Indic language
-          rec.lang = langConfigMap[langToUse].fallback;
-          try {
-            rec.start();
-          } catch {
-            setErrorMessage('Language speech model not installed locally. Trying fallback model...');
-          }
+          console.warn(`[SpeechRecognition] Language ${langConfigMap[langToUse].bcp47} not supported. Switching to fallback.`);
+          setIsListening(false);
+          setTimeout(() => {
+            try {
+              const fallbackRec = new SpeechRec();
+              fallbackRec.continuous = true;
+              fallbackRec.interimResults = true;
+              fallbackRec.lang = langConfigMap[langToUse].fallback;
+              fallbackRec.onstart = () => setIsListening(true);
+              fallbackRec.onresult = rec.onresult;
+              fallbackRec.onend = () => setIsListening(false);
+              recognitionRef.current = fallbackRec;
+              fallbackRec.start();
+            } catch {
+              setErrorMessage('Voice recognition speech model not installed on this device.');
+            }
+          }, 250);
         } else if (event.error === 'no-speech') {
           // Silence detected, keep waiting
         } else {
@@ -187,7 +202,7 @@ export const VoiceAccessModal: React.FC<VoiceAccessModalProps> = ({
     if (autoSearchCountdown <= 0) {
       if (transcript.trim()) {
         stopRecognition();
-        onSearchSolution(transcript.trim());
+        onSearchSolution(transcript.trim(), currentLang);
       }
       setAutoSearchCountdown(null);
       return;
@@ -198,7 +213,7 @@ export const VoiceAccessModal: React.FC<VoiceAccessModalProps> = ({
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [autoSearchCountdown, transcript]);
+  }, [autoSearchCountdown, transcript, currentLang]);
 
   // Start listening automatically when modal opens
   useEffect(() => {
@@ -222,13 +237,13 @@ export const VoiceAccessModal: React.FC<VoiceAccessModalProps> = ({
       } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         if (transcript.trim()) {
           stopRecognition();
-          onSearchSolution(transcript.trim());
+          onSearchSolution(transcript.trim(), currentLang);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, transcript]);
+  }, [isOpen, transcript, currentLang]);
 
   if (!isOpen) return null;
 
@@ -344,7 +359,7 @@ export const VoiceAccessModal: React.FC<VoiceAccessModalProps> = ({
             disabled={!transcript.trim()}
             onClick={() => {
               stopRecognition();
-              onSearchSolution(transcript.trim());
+              onSearchSolution(transcript.trim(), currentLang);
             }}
           >
             <Search size={16} />
