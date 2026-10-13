@@ -268,8 +268,22 @@ def _send_via_resend(api_key: str, recipient_email: str, subject: str, html_cont
 
 def _send_via_brevo(api_key: str, recipient_email: str, subject: str, html_content: str, text_content: str, from_name: str, from_addr: str) -> bool:
     """Send email via Brevo (Sendinblue) HTTP REST API (port 443 HTTPS). Free 300 emails/day."""
+    clean_key = api_key.strip()
+    if clean_key.startswith("xsmtpsib-"):
+        logger.error(
+            "[BREVO CONFIG ERROR] You provided an SMTP key ('xsmtpsib-...'). "
+            "Brevo's REST API requires an API key starting with 'xkeysib-'. "
+            "Please go to Brevo Dashboard -> Settings -> SMTP & API -> 'API Keys' tab -> 'Generate a new API key'."
+        )
+        print(
+            "[BREVO CONFIG ERROR] Key starts with 'xsmtpsib-'. "
+            "Please use the API Key starting with 'xkeysib-' from the 'API Keys' tab in Brevo."
+        )
+        return False
+
+    sender_email = os.getenv("BREVO_SENDER_EMAIL", os.getenv("BREVO_FROM_EMAIL", from_addr)).strip()
     payload = {
-        "sender": {"name": from_name, "email": from_addr},
+        "sender": {"name": from_name, "email": sender_email},
         "to": [{"email": recipient_email}],
         "subject": subject,
         "htmlContent": html_content,
@@ -279,15 +293,21 @@ def _send_via_brevo(api_key: str, recipient_email: str, subject: str, html_conte
         "https://api.brevo.com/v3/smtp/email",
         data=json.dumps(payload).encode("utf-8"),
         headers={
-            "api-key": api_key.strip(),
+            "api-key": clean_key,
             "Content-Type": "application/json",
             "Accept": "application/json",
             "User-Agent": "ATLAS-2.0-Security/1.0",
         },
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=12) as resp:
-        return resp.status in (200, 201)
+    try:
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            return resp.status in (200, 201)
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="ignore")
+        logger.error(f"[BREVO API ERROR {e.code}] {err_body}")
+        print(f"[BREVO API ERROR {e.code}] {err_body}")
+        raise RuntimeError(f"Brevo API error ({e.code}): {err_body}")
 
 
 def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") -> Dict[str, Any]:
