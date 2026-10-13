@@ -313,9 +313,10 @@ def _send_via_brevo(api_key: str, recipient_email: str, subject: str, html_conte
             return resp.status in (200, 201)
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8", errors="ignore")
-        logger.error(f"[BREVO API ERROR {e.code}] {err_body}")
-        print(f"[BREVO API ERROR {e.code}] {err_body}")
-        raise RuntimeError(f"Brevo API error ({e.code}): {err_body}")
+        # Sanitize error body to prevent leaking internal headers or credentials
+        sanitized_err = re.sub(r"(xkeysib-[a-zA-Z0-9\-]+|xsmtpsib-[a-zA-Z0-9\-]+)", "[REDACTED_KEY]", err_body)
+        logger.error(f"[BREVO API ERROR {e.code}] {sanitized_err}")
+        raise RuntimeError(f"Brevo API error ({e.code}): {sanitized_err}")
 
 
 def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") -> Dict[str, Any]:
@@ -427,9 +428,12 @@ def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") 
                 last_error = e
                 logger.warning(f"[EMAIL SMTP ATTEMPT FAILED] Host {host}:{p} error: {e}")
 
-        # If all SMTP connection attempts failed (e.g. Render Free Tier blocks SMTP ports 25, 465, 587)
-        # Log securely to server terminal so admin/developer can see in Render Logs
-        print(f"[ATLAS 2.0 SERVER LOG] OTP for {clean_email}: {otp_code}")
+        # Mask email and redact OTP to comply with OWASP Logging Security Standards
+        masked_email = (clean_email[:2] + "***@" + clean_email.split("@")[1]) if "@" in clean_email else "***"
+        if os.getenv("ALLOW_DEV_OTP_RESPONSE", "false").lower() == "true" and os.getenv("ENVIRONMENT") == "development":
+            logger.info(f"[DEV DEBUG ONLY] OTP generated for {masked_email}")
+        else:
+            logger.info(f"[ATLAS 2.0 SERVER LOG] OTP generated for {masked_email}: [REDACTED FOR SECURITY]")
         error_msg = (
             "Email delivery failed: Outbound SMTP ports 465/587 are blocked by Render Free Tier. "
             "Please add a free BREVO_API_KEY or RESEND_API_KEY to your Render Environment Variables to send emails via HTTPS."

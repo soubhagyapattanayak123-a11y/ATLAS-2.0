@@ -31,15 +31,22 @@ def init_db() -> None:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS atlas_items (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER DEFAULT NULL,
                     title TEXT NOT NULL,
                     description TEXT DEFAULT '',
                     category TEXT NOT NULL DEFAULT 'General',
                     priority TEXT NOT NULL DEFAULT 'medium',
                     status TEXT NOT NULL DEFAULT 'todo',
                     created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 );
             """)
+            try:
+                conn.execute("ALTER TABLE atlas_items ADD COLUMN user_id INTEGER DEFAULT NULL;")
+            except Exception:
+                pass
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_items_user_id ON atlas_items(user_id);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_items_status ON atlas_items(status);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_items_category ON atlas_items(category);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_items_priority ON atlas_items(priority);")

@@ -4,6 +4,8 @@ import re
 import urllib.request
 from typing import Dict, Any, List, Optional, Tuple
 
+from .security_utils import validate_image_payload, validate_pdf_payload, safe_urlopen
+
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
 
@@ -87,7 +89,7 @@ def call_openrouter(messages: List[Dict[str, str]], max_tokens: int = 500, tempe
             },
         )
         try:
-            with urllib.request.urlopen(req, timeout=25) as resp:
+            with safe_urlopen(req, timeout=25) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 choice = data.get("choices", [{}])[0]
                 content = choice.get("message", {}).get("content", "").strip()
@@ -297,7 +299,7 @@ def call_openrouter_vision(
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with safe_urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 choice = data.get("choices", [{}])[0]
                 content = choice.get("message", {}).get("content", "").strip()
@@ -382,12 +384,15 @@ def scan_and_process_image(
     custom_question: str = None
 ) -> Dict[str, Any]:
     """
-    Process image using vision AI:
+    Process image using vision AI with strict file validation:
     1. 'extract_text': Scans and converts printed/handwritten text and math formulas into text (OCR).
     2. 'qa': Solves questions found in the image or answers custom user question step-by-step.
     3. 'explain': Explains diagrams, charts, formulas, or academic concepts illustrated in the image.
     4. 'quiz': Generates 3-4 interactive Multiple Choice Questions (MCQ questions) from the scanned topic.
     """
+    # Strict validation: verify size limit, decodability, and image magic bytes (PNG, JPEG, WEBP, GIF)
+    _raw_bytes, _detected_mime = validate_image_payload(image_b64)
+
     lang = (language or "English").strip()
     is_odia = lang.lower() in ["odia", "or", "or-in"]
     is_hindi = lang.lower() in ["hindi", "hi", "hi-in"]
@@ -574,19 +579,16 @@ def extract_pdf_data(pdf_b64: str) -> tuple[int, List[str], List[str]]:
     import base64
     import pypdf
 
-    # Strip data URL prefix if present
-    raw_b64 = pdf_b64
-    if "," in raw_b64:
-        raw_b64 = raw_b64.split(",", 1)[1]
-
-    pdf_bytes = base64.b64decode(raw_b64)
+    # Strictly validate PDF payload size and magic bytes (%PDF-)
+    pdf_bytes = validate_pdf_payload(pdf_b64)
     reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
     page_count = len(reader.pages)
 
     pages_text: List[str] = []
     page_images: List[str] = []
 
-    for i, page in enumerate(reader.pages):
+    # Parse up to 50 pages max to prevent resource exhaustion / DoS decompression bombs
+    for i, page in enumerate(reader.pages[:50]):
         t = page.extract_text() or ""
         pages_text.append(t.strip())
 

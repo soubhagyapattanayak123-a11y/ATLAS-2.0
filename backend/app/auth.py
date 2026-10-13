@@ -14,10 +14,24 @@ ITERATIONS = 600_000
 # Never stored in the database. Even if an attacker gains full read access to atlas.db,
 # they cannot crack salted hashes without this server pepper.
 LEGACY_DEFAULT_PEPPER = "atlas_core_defense_pepper_salt_secret_key_2026_v2"
-SECURITY_PEPPER = os.getenv(
-    "SECURITY_PEPPER",
-    os.getenv("SECRET_KEY", LEGACY_DEFAULT_PEPPER),
-)
+_env_secret = os.getenv("SECURITY_PEPPER", os.getenv("SECRET_KEY", ""))
+
+if not _env_secret:
+    if os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production":
+        import logging
+        logging.getLogger("uvicorn.error").warning(
+            "[SECURITY WARNING] No SECRET_KEY / SECURITY_PEPPER set in production! "
+            "Please configure a 32+ character high-entropy SECRET_KEY in your environment variables."
+        )
+    SECURITY_PEPPER = LEGACY_DEFAULT_PEPPER
+else:
+    if len(_env_secret) < 32:
+        import logging
+        logging.getLogger("uvicorn.error").warning(
+            "[SECURITY WARNING] SECRET_KEY / SECURITY_PEPPER is shorter than 32 characters. "
+            "Recommended: Use a 256-bit cryptographically random hex or base64 key."
+        )
+    SECURITY_PEPPER = _env_secret
 
 
 def generate_salt(bytes_count: int = 32) -> str:

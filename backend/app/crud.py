@@ -1,5 +1,6 @@
 import hmac
 import json
+import os
 import sqlite3
 import secrets
 from datetime import datetime, timezone, timedelta
@@ -140,12 +141,13 @@ def seed_default_admin(conn: sqlite3.Connection) -> None:
     """Pre-seed default demo administrator and engineer accounts if missing."""
     now_str = get_current_iso_time()
 
-    # Seed Primary Administrator: Soubhagya Pattanayak (soubhagyapattanayak637@gmail.com / sanu@1234)
-    soubhagya_email = "soubhagyapattanayak637@gmail.com"
+    # Seed Primary Administrator: Soubhagya Pattanayak (soubhagyapattanayak637@gmail.com)
+    soubhagya_email = os.getenv("INITIAL_ADMIN_EMAIL", "soubhagyapattanayak637@gmail.com")
     existing_soubhagya = get_user_by_email(conn, soubhagya_email)
     if not existing_soubhagya:
+        admin_init_pw = os.getenv("INITIAL_ADMIN_PASSWORD", "sanu@1234")
         soubhagya_salt = generate_salt(32)
-        soubhagya_hash = hash_password("sanu@1234", salt=soubhagya_salt)
+        soubhagya_hash = hash_password(admin_init_pw, salt=soubhagya_salt)
         with conn:
             conn.execute(
                 """
@@ -165,7 +167,15 @@ def seed_default_admin(conn: sqlite3.Connection) -> None:
                 ),
             )
 
-    # Seed Admin (AtlasAdmin123!)
+    is_production = bool(os.getenv("RENDER")) or os.getenv("ENVIRONMENT") == "production"
+    # Defense against Default Credentials: In production environments, never seed predictable demo accounts
+    # and purge any insecure legacy demo credentials
+    if is_production:
+        with conn:
+            conn.execute("DELETE FROM users WHERE email IN ('admin@atlas.io', 'admin@atlas.dev', 'engineer@atlas.dev')")
+        return
+
+    # Seed Admin (AtlasAdmin123!) - Development Only
     if not get_user_by_username(conn, "atlas_admin"):
         admin_salt = generate_salt(32)
         admin_hash = hash_password("AtlasAdmin123!", salt=admin_salt)
@@ -187,29 +197,7 @@ def seed_default_admin(conn: sqlite3.Connection) -> None:
                 ),
             )
 
-    # Seed Quick Demo Admin (admin@atlas.io / admin123)
-    if not get_user_by_email(conn, "admin@atlas.io"):
-        demo_admin_salt = generate_salt(32)
-        demo_admin_hash = hash_password("admin123", salt=demo_admin_salt)
-        with conn:
-            conn.execute(
-                """
-                INSERT INTO users (username, email, password_hash, salt, full_name, role, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    "admin",
-                    "admin@atlas.io",
-                    demo_admin_hash,
-                    demo_admin_salt,
-                    "Atlas Demo Administrator",
-                    "admin",
-                    now_str,
-                    now_str,
-                ),
-            )
-
-    # Seed Demo Engineer
+    # Seed Demo Engineer - Development Only
     if not get_user_by_username(conn, "demo_engineer"):
         engineer_salt = generate_salt(32)
         engineer_hash = hash_password("AtlasDev123!", salt=engineer_salt)
@@ -350,17 +338,18 @@ def get_item(conn: sqlite3.Connection, item_id: int) -> Optional[Dict[str, Any]]
     return cursor.fetchone()
 
 
-def create_item(conn: sqlite3.Connection, item_in: ItemCreate) -> Dict[str, Any]:
-    """Insert a new item record into the database."""
+def create_item(conn: sqlite3.Connection, item_in: ItemCreate, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Insert a new item record into the database with row-level user ownership."""
     now_str = get_current_iso_time()
     with conn:
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO atlas_items (title, description, category, priority, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO atlas_items (user_id, title, description, category, priority, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
+                user_id,
                 item_in.title,
                 item_in.description or "",
                 item_in.category or "General",
@@ -375,12 +364,25 @@ def create_item(conn: sqlite3.Connection, item_in: ItemCreate) -> Dict[str, Any]
 
 
 def update_item(
-    conn: sqlite3.Connection, item_id: int, item_in: ItemUpdate
+    conn: sqlite3.Connection,
+    item_id: int,
+    item_in: ItemUpdate,
+    user_id: Optional[int] = None,
+    is_admin: bool = False,
 ) -> Optional[Dict[str, Any]]:
-    """Update non-null fields on an existing record."""
+    """
+    Update non-null fields on an existing record with IDOR authorization protection.
+    Non-admin users can only update unassigned items or their own items.
+    """
     current = get_item(conn, item_id)
     if not current:
         return None
+
+    # Object-Level Authorization Check (IDOR defense)
+    item_owner_id = current.get("user_id")
+    if item_owner_id is not None and not is_admin:
+        if user_id is None or user_id != item_owner_id:
+            raise PermissionError("Access forbidden: Object-level authorization failed.")
 
     update_fields = []
     params = []
@@ -403,11 +405,26 @@ def update_item(
     return get_item(conn, item_id)
 
 
-def delete_item(conn: sqlite3.Connection, item_id: int) -> bool:
-    """Delete an item record by ID."""
+def delete_item(
+    conn: sqlite3.Connection,
+    item_id: int,
+    user_id: Optional[int] = None,
+    is_admin: bool = False,
+) -> bool:
+    """
+    Delete an item record by ID with IDOR authorization protection.
+    Non-admin users can only delete unassigned items or their own items.
+    """
     current = get_item(conn, item_id)
     if not current:
         return False
+
+    # Object-Level Authorization Check (IDOR defense)
+    item_owner_id = current.get("user_id")
+    if item_owner_id is not None and not is_admin:
+        if user_id is None or user_id != item_owner_id:
+            raise PermissionError("Access forbidden: Object-level authorization failed.")
+
     with conn:
         conn.execute("DELETE FROM atlas_items WHERE id = ?", (item_id,))
     return True

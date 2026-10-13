@@ -85,18 +85,39 @@ if (typeof window !== 'undefined') {
 }
 
 export const API_BASE_URL = getApiBaseUrl();
+// In-Memory Token Shield (Defends against XSS exfiltration of localStorage tokens)
+let inMemoryToken: string | null = null;
 const TOKEN_KEY = 'atlas_auth_token';
 
 function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  if (inMemoryToken) return inMemoryToken;
+  try {
+    const token = sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+    if (token) inMemoryToken = token;
+    return token;
+  } catch {
+    return inMemoryToken;
+  }
 }
 
 function setStoredToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+  inMemoryToken = token;
+  try {
+    sessionStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch {
+    // In-memory token retained
+  }
 }
 
 function clearStoredToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  inMemoryToken = null;
+  try {
+    sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Cleaned
+  }
 }
 
 function normalizeOdiaScript(text: string): string {

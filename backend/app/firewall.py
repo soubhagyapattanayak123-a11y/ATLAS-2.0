@@ -527,13 +527,26 @@ class FirewallMiddleware(BaseHTTPMiddleware):
         firewall_engine.clean_requests += 1
         response = await call_next(request)
 
-        # 8. Inject Enterprise Security Headers
+        # 8. Inject Enterprise Security Headers (OWASP Hardened Standard)
         response.headers["X-Firewall-Status"] = "ACTIVE; ATLAS-SHIELD-V2"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
-        response.headers["Permissions-Policy"] = "camera=(), geolocation=(), payment=()"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(self), geolocation=(), payment=()"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: blob: https:; "
+            "connect-src 'self' https: wss:; "
+            "media-src 'self' blob: data: https:; "
+            "object-src 'none'; "
+            "frame-ancestors 'none';"
+        )
+        if request.url.scheme == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
 
         return response

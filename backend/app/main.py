@@ -131,8 +131,7 @@ app = FastAPI(
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
 raw_custom_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
 
-# If wildcard is requested, use regex to comply with Starlette credentials policy
-is_wildcard = "*" in raw_custom_origins
+# Overly Permissive CORS Defense: Disallow universal wildcard '*' with allow_credentials=True
 active_origins = [o for o in raw_custom_origins if o != "*"]
 active_origins.extend([
     "http://localhost:5173",
@@ -143,12 +142,8 @@ active_origins.extend([
     "http://127.0.0.1:8080",
 ])
 
-# Support localhost, Vercel deployments (*.vercel.app), and custom domains
-origin_regex = (
-    r".*"
-    if is_wildcard
-    else r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.vercel\.app)$"
-)
+# Strict origin regex for localhost and verified Vercel deployments
+origin_regex = r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|https://[a-zA-Z0-9\-]+\.vercel\.app)$"
 
 # Enable hardened CORS restricted to localhost, Vercel app domains, and authorized origins
 app.add_middleware(
@@ -156,8 +151,9 @@ app.add_middleware(
     allow_origins=active_origins,
     allow_origin_regex=origin_regex,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "X-Signature", "X-Webhook-Signature"],
+    expose_headers=["Content-Length", "X-Firewall-Status"],
 )
 
 # Enable ATLAS 2.0 Web Application Firewall (WAF)
@@ -568,24 +564,50 @@ def read_item(item_id: int, conn: sqlite3.Connection = Depends(get_db)):
 
 
 @app.post("/api/items", response_model=ItemResponse, status_code=status.HTTP_201_CREATED, tags=["Items"])
-def add_item(item_in: ItemCreate, conn: sqlite3.Connection = Depends(get_db)):
-    """Create a new item in SQLite."""
-    return create_item(conn, item_in=item_in)
+def add_item(
+    item_in: ItemCreate,
+    user: Optional[dict] = Depends(get_optional_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    """Create a new item in SQLite with row-level owner attribution."""
+    user_id = user["id"] if user else None
+    return create_item(conn, item_in=item_in, user_id=user_id)
 
 
 @app.put("/api/items/{item_id}", response_model=ItemResponse, tags=["Items"])
-def modify_item(item_id: int, item_in: ItemUpdate, conn: sqlite3.Connection = Depends(get_db)):
-    """Update attributes of an existing item."""
-    updated = update_item(conn, item_id=item_id, item_in=item_in)
+def modify_item(
+    item_id: int,
+    item_in: ItemUpdate,
+    user: Optional[dict] = Depends(get_optional_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    """Update attributes of an existing item with IDOR object-level authorization."""
+    user_id = user["id"] if user else None
+    is_admin = (user.get("role") == "admin") if user else False
+    try:
+        updated = update_item(conn, item_id=item_id, item_in=item_in, user_id=user_id, is_admin=is_admin)
+    except PermissionError as p_err:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(p_err))
+
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
     return updated
 
 
 @app.delete("/api/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Items"])
-def remove_item(item_id: int, conn: sqlite3.Connection = Depends(get_db)):
-    """Delete an item from SQLite."""
-    success = delete_item(conn, item_id=item_id)
+def remove_item(
+    item_id: int,
+    user: Optional[dict] = Depends(get_optional_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    """Delete an item from SQLite with IDOR object-level authorization."""
+    user_id = user["id"] if user else None
+    is_admin = (user.get("role") == "admin") if user else False
+    try:
+        success = delete_item(conn, item_id=item_id, user_id=user_id, is_admin=is_admin)
+    except PermissionError as p_err:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(p_err))
+
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
     return None
@@ -992,12 +1014,16 @@ def ai_scan_image_endpoint(body: ScanImageRequest):
     if not body.image or not body.image.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required.")
 
-    result_dict = scan_and_process_image(
-        image_b64=body.image,
-        mode=body.mode,
-        language=body.language,
-        custom_question=body.custom_question,
-    )
+    try:
+        result_dict = scan_and_process_image(
+            image_b64=body.image,
+            mode=body.mode,
+            language=body.language,
+            custom_question=body.custom_question,
+        )
+    except ValueError as val_err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(val_err))
+
     return ScanImageResponse(
         mode=result_dict.get("mode", body.mode),
         extracted_text=result_dict.get("extracted_text"),
@@ -1020,14 +1046,17 @@ def ai_scan_pdf_endpoint(body: ScanPdfRequest):
     if not body.pdf_data or not body.pdf_data.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="PDF data is required.")
 
-    result_dict = scan_and_process_pdf(
-        pdf_b64=body.pdf_data,
-        filename=body.filename or "document.pdf",
-        mode=body.mode,
-        language=body.language,
-        custom_question=body.custom_question,
-        page_number=body.page_number,
-    )
+    try:
+        result_dict = scan_and_process_pdf(
+            pdf_b64=body.pdf_data,
+            filename=body.filename or "document.pdf",
+            mode=body.mode,
+            language=body.language,
+            custom_question=body.custom_question,
+            page_number=body.page_number,
+        )
+    except ValueError as val_err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(val_err))
     return ScanPdfResponse(
         mode=result_dict.get("mode", body.mode),
         page_count=result_dict.get("page_count", 1),
@@ -1317,6 +1346,32 @@ def clear_firewall_logs_endpoint(
     cursor.execute("DELETE FROM firewall_threat_logs")
     conn.commit()
     return {"message": "Firewall threat logs cleared successfully"}
+
+
+# =========================================================================
+# SECURE WEBHOOK INGESTION (Item 15: Cryptographic Signature Verification)
+# =========================================================================
+from .webhooks import verify_webhook_signature
+
+@app.post("/api/webhooks/events", tags=["Webhooks & Integrations"])
+async def handle_secure_webhook(
+    request: Request,
+    x_signature: Optional[str] = Header(None, alias="X-Signature"),
+    x_webhook_signature: Optional[str] = Header(None, alias="X-Webhook-Signature"),
+):
+    """
+    Cryptographically Verified Webhook Endpoint:
+    Enforces HMAC-SHA256 signature verification and replay-attack checks.
+    """
+    signature = x_signature or x_webhook_signature
+    body_bytes = await request.body()
+    is_valid, msg = verify_webhook_signature(body_bytes, signature)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Webhook verification failed: {msg}",
+        )
+    return {"status": "accepted", "message": "Signature verified successfully"}
 
 
 # =========================================================================
