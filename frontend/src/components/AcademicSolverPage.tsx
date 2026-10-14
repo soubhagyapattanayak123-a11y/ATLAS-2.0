@@ -73,6 +73,7 @@ import { KnowledgeGraphExplorer } from './KnowledgeGraphExplorer';
 import { BattleOfBrainsArena } from './BattleOfBrainsArena';
 import { MathGraphVisualizer } from './MathGraphVisualizer';
 import { DownloadCachedAppModal } from './DownloadCachedAppModal';
+import { LiveCurrentAffairsHub } from './LiveCurrentAffairsHub';
 
 export type AcademicActiveTab =
   | 'home'
@@ -80,6 +81,7 @@ export type AcademicActiveTab =
   | 'ask-question'
   | 'image-scanner'
   | 'pdf-scanner'
+  | 'current-affairs'
   | 'flashcards'
   | 'voice-learning'
   | 'geography-idea'
@@ -196,6 +198,9 @@ export function AcademicSolverPage({
       pdfScannerCardTitle: 'PDF Scanner',
       pdfScannerCardDesc: 'Scan PDF worksheets & textbooks to text, solve questions & explain',
       scanPdfBtn: '📄 Scan PDF (Text & 2 Options)',
+      currentAffairsNav: '🔴 Live Current Affairs',
+      currentAffairsCardTitle: 'Live Current Affairs & GK Desk',
+      currentAffairsCardDesc: 'Real-time verified news, exam syllabus relevance (UPSC/SSC/Banking), static GK links & daily speed quiz',
       dbNodesLabel: 'Database Knowledge Nodes',
       activeTasksLabel: 'Active Tasks In-Progress',
       completedNodesLabel: 'Completed Solutions',
@@ -354,6 +359,9 @@ export function AcademicSolverPage({
       pdfScannerCardTitle: 'पीडीएफ स्कैनर',
       pdfScannerCardDesc: 'पीडीएफ से टेक्स्ट निकालें, प्रश्न हल करें और दस्तावेज़ समझें',
       scanPdfBtn: '📄 पीडीएफ स्कैन करें (टेक्स्ट और 2 विकल्प)',
+      currentAffairsNav: '🔴 लाइव समसामयिकी (Current Affairs)',
+      currentAffairsCardTitle: 'लाइव समसामयिकी एवं परीक्षा GK',
+      currentAffairsCardDesc: 'वास्तविक समय के समाचार, परीक्षा प्रासंगिकता, स्टेटिक जीके और 5-प्रश्नों की दैनिक क्विज़',
       dbNodesLabel: 'डेटाबेस ज्ञान नोड्स',
       activeTasksLabel: 'प्रगति में सक्रिय कार्य',
       completedNodesLabel: 'पूर्ण समाधान',
@@ -512,6 +520,9 @@ export function AcademicSolverPage({
       pdfScannerCardTitle: 'ପିଡିଏଫ୍ ସ୍କାନର୍',
       pdfScannerCardDesc: 'ପିଡିଏଫ୍‌ରୁ ପାଠ୍ୟ ବାହାର କରନ୍ତୁ, ପ୍ରଶ୍ନ ସମାଧାନ କରନ୍ତୁ ଓ ବୁଝନ୍ତୁ',
       scanPdfBtn: '📄 ପିଡିଏଫ୍ ସ୍କାନ କରନ୍ତୁ (ପାଠ୍ୟ ଏବଂ ୨ଟି ବିକଳ୍ପ)',
+      currentAffairsNav: '🔴 ଲାଇଭ୍ ସାମ୍ପ୍ରତିକ ଘଟଣା (Current Affairs)',
+      currentAffairsCardTitle: 'ଲାଇଭ୍ ସାମ୍ପ୍ରତିକ ଘଟଣାବଳୀ ଓ ଜିକେ',
+      currentAffairsCardDesc: 'ପ୍ରତି ମୁହୂର୍ତ୍ତର ତାଜା ଖବର, ପରୀକ୍ଷା ଉପଯୋଗୀ ତଥ୍ୟ, ଷ୍ଟାଟିକ୍ ଜିକେ ଏବଂ ଦୈନିକ ସ୍ପିଡ୍ କୁଇଜ୍',
       dbNodesLabel: 'ଡାଟାବେସ୍ ଜ୍ଞାନ ନୋଡ୍ସ',
       activeTasksLabel: 'ଚାଲୁଥିବା ସକ୍ରିୟ କାର୍ଯ୍ୟ',
       completedNodesLabel: 'ସମ୍ପନ୍ନ ସମାଧାନ',
@@ -2477,6 +2488,34 @@ Passage: (The 2-3 spoken sentences)`;
             </button>
 
             <button
+              id="sidebar-nav-current-affairs"
+              type="button"
+              className={`academic-nav-btn ${activeTab === 'current-affairs' ? 'active' : ''}`}
+              onClick={() => setActiveTab('current-affairs')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>{t.currentAffairsNav}</span>
+              <span
+                style={{
+                  fontSize: '9px',
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  padding: '1px 5px',
+                  borderRadius: '999px',
+                  fontWeight: 800,
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Live
+              </span>
+            </button>
+
+            <button
               type="button"
               className={`academic-nav-btn ${activeTab === 'flashcards' ? 'active' : ''}`}
               onClick={() => setActiveTab('flashcards')}
@@ -2791,6 +2830,53 @@ Passage: (The 2-3 spoken sentences)`;
                     <h4 className="feature-card-title">{t.pdfScannerCardTitle}</h4>
                   </div>
                   <p className="feature-card-desc">{t.pdfScannerCardDesc}</p>
+                </div>
+
+                {/* Card 2.7: Live Current Affairs & Exam GK */}
+                <div
+                  className="academic-feature-card"
+                  onClick={() => setActiveTab('current-affairs')}
+                  role="button"
+                  tabIndex={0}
+                  style={{
+                    position: 'relative',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    background: 'linear-gradient(145deg, rgba(239, 68, 68, 0.05), rgba(99, 102, 241, 0.05))',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      padding: '2px 7px',
+                      borderRadius: '999px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                      }}
+                    />
+                    Live
+                  </div>
+                  <div className="feature-card-header">
+                    <span className="feature-card-icon">📰</span>
+                    <h4 className="feature-card-title">{t.currentAffairsCardTitle}</h4>
+                  </div>
+                  <p className="feature-card-desc">{t.currentAffairsCardDesc}</p>
                 </div>
 
                 {/* Card 3: Flashcards */}
@@ -3900,6 +3986,45 @@ Passage: (The 2-3 spoken sentences)`;
           {/* ================================================================= */}
           {activeTab === 'pdf-scanner' && (
             <PdfScanner selectedLanguage={selectedLanguage} />
+          )}
+
+          {/* ================================================================= */}
+          {/* TAB: LIVE CURRENT AFFAIRS & DAILY EXAM GK DESK                    */}
+          {/* ================================================================= */}
+          {activeTab === 'current-affairs' && (
+            <div className="academic-subview-card">
+              <div className="subview-header">
+                <div>
+                  <h2 className="academic-section-heading">
+                    {selectedLanguage === 'Odia'
+                      ? 'ଦୈନିକ ସାମ୍ପ୍ରତିକ ଘଟଣାବଳୀ (Live Current Affairs)'
+                      : selectedLanguage === 'Hindi'
+                      ? 'दैनिक समसामयिक घटनाक्रम (Live Current Affairs)'
+                      : 'Live Current Affairs & Exam GK Desk'}
+                  </h2>
+                  <p className="subview-subtitle">
+                    {selectedLanguage === 'Odia'
+                      ? 'ପ୍ରତି ମୁହୂର୍ତ୍ତର ଲାଇଭ୍ ଖବର, ପରୀକ୍ଷା ଉପଯୋଗୀ ତଥ୍ୟ (UPSC/SSC/Banking), ଷ୍ଟାଟିକ୍ ଜିକେ ଏବଂ ଦୈନିକ ସ୍ପିଡ୍ କୁଇଜ୍'
+                      : selectedLanguage === 'Hindi'
+                      ? 'वास्तविक समय के सत्यापित समाचार, परीक्षा प्रासंगिकता, स्टेटिक सामान्य ज्ञान और दैनिक स्पीड क्विज़'
+                      : 'Real-time verified news, exam syllabus relevance (UPSC/SSC/Banking), static GK links & daily speed quiz'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-back-to-home"
+                  onClick={() => setActiveTab('home')}
+                >
+                  ← Back to Home
+                </button>
+              </div>
+
+              <LiveCurrentAffairsHub
+                currentUser={currentUser}
+                selectedLanguage={selectedLanguage}
+                onNavigateTab={(tab) => setActiveTab(tab as AcademicActiveTab)}
+              />
+            </div>
           )}
 
           {/* ================================================================= */}

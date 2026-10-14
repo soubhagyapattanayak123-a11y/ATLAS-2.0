@@ -96,6 +96,7 @@ from .auth import (
 )
 from .email_service import generate_otp, send_otp_email
 from .firewall import firewall_engine, FirewallMiddleware
+from .current_affairs import fetch_live_current_affairs
 from .schemas import (
     FirewallIPRuleRequest,
     FirewallRuleToggleRequest,
@@ -1032,6 +1033,19 @@ def ai_solve_math_endpoint(body: SolveMathRequest):
         complexity_mode=body.complexity_mode or "standard",
         domain=body.domain,
     )
+
+
+@app.get("/api/current-affairs/live", tags=["Current Affairs"])
+def get_live_current_affairs_endpoint(
+    category: str = Query("all", description="Category: all, national, international, economy, science, sports"),
+    language: str = Query("English", description="Language: English, Hindi, Odia"),
+):
+    """
+    Real-time Live Current Affairs Feed:
+    Fetches up-to-date headlines, exam relevance tags, static GK connections,
+    and a daily 5-question speed quiz.
+    """
+    return fetch_live_current_affairs(category=category, language=language)
 
 
 @app.post("/api/ai/scan-image", response_model=ScanImageResponse, tags=["AI Academic Solver"])
