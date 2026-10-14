@@ -2501,6 +2501,27 @@ Return ONLY the raw JSON array without markdown or extra commentary.`;
       return getFallbackCurrentAffairs(category, language);
     }
   },
+
+  // Complex Problem Dataset & Fine-Tuning Management
+  getDatasetStats: async (): Promise<{ total_problems: number; subjects: Record<string, number>; difficulties: Record<string, number>; dataset_path: string }> => {
+    return request('/ai/dataset/stats');
+  },
+
+  getDatasetProblems: async (): Promise<any[]> => {
+    return request('/ai/dataset/problems');
+  },
+
+  addComplexProblem: async (problemData: any): Promise<{ message: string; problem_id: string; total_problems: number }> => {
+    return request('/ai/dataset/add', {
+      method: 'POST',
+      body: JSON.stringify(problemData),
+    });
+  },
+
+  getDatasetExportUrl(): string {
+    const baseUrl = getApiBaseUrl();
+    return `${baseUrl}/ai/dataset/export`;
+  },
 };
 
 export interface CurrentAffairsQuizQuestion {

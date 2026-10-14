@@ -5,8 +5,14 @@ import math
 from fractions import Fraction
 import urllib.request
 from typing import Dict, Any, List, Optional, Tuple
+from pathlib import Path
+from dotenv import load_dotenv
+
+_backend_dir = Path(__file__).resolve().parent.parent
+load_dotenv(_backend_dir / ".env")
 
 from .security_utils import validate_image_payload, validate_pdf_payload, safe_urlopen
+from .knowledge_rag import find_relevant_exemplars, format_exemplars_for_prompt
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
@@ -153,12 +159,18 @@ def ask_academic_question(question: str, language: str = "English") -> str:
         )
         user_message = f"Question: {question}\n\n(Note: Please explain step-by-step with clear numbered points, not in a single paragraph.)"
 
+    # Inject verified complex exemplars from the training dataset
+    exemplars = find_relevant_exemplars(question, language, max_exemplars=2)
+    exemplar_block = format_exemplars_for_prompt(exemplars, language)
+    if exemplar_block:
+        system_prompt += f"\n\n{exemplar_block}"
+
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_message},
     ]
 
-    answer = call_openrouter(messages, max_tokens=600)
+    answer = call_openrouter(messages, max_tokens=700)
     if not answer:
         if is_odia:
             return "କ୍ଷମା କରିବେ, ଏହି ମୁହୂର୍ତ୍ତରେ ଉତ୍ତର ପ୍ରସ୍ତୁତ କରିବାରେ ଅସୁବିଧା ହେଲା। ଦୟାକରି ଇଣ୍ଟରନେଟ୍ ସଂଯୋଗ ଯାଞ୍ଚ କରି ପୁନର୍ବାର ଚେଷ୍ଟା କରନ୍ତୁ।"

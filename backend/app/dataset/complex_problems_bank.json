@@ -1,0 +1,110 @@
+[
+  {
+    "id": "MATH-CALC-001",
+    "subject": "Mathematics",
+    "topic": "Calculus - Integration by Parts",
+    "difficulty": "Hard (JEE / Class 12)",
+    "question": "Evaluate the indefinite integral: integral of x * e^(2x) dx",
+    "question_odia": "ଅନିର୍ଦ୍ଦିଷ୍ଟ ଅନୁକଳନର ମାନ ନିର୍ଣ୍ଣୟ କରନ୍ତୁ: ∫ x * e^(2x) dx",
+    "question_hindi": "अनिश्चित समाकलन का मान ज्ञात कीजिए: ∫ x * e^(2x) dx",
+    "formulas": ["∫ u * v dx = u * ∫ v dx - ∫ [u' * (∫ v dx)] dx (ILATE rule)"],
+    "steps": [
+      "Step 1 (Identify Components via ILATE): Let u = x (Algebraic function) and dv = e^(2x) dx (Exponential function).",
+      "Step 2 (Differentiate and Integrate): du/dx = 1 => du = dx. Integrating dv gives v = (1/2) * e^(2x).",
+      "Step 3 (Apply Integration by Parts Formula): ∫ x * e^(2x) dx = x * [(1/2) * e^(2x)] - ∫ [(1/2) * e^(2x) * 1] dx = (x/2) * e^(2x) - (1/2) * ∫ e^(2x) dx.",
+      "Step 4 (Final Integration & Constant): Evaluating the remaining integral yields (1/2) * [(1/2) * e^(2x)] = (1/4) * e^(2x). Thus, the complete solution is (1/2) * x * e^(2x) - (1/4) * e^(2x) + C = (1/4) * e^(2x) * (2x - 1) + C."
+    ],
+    "result": "(1/4) * e^(2x) * (2x - 1) + C",
+    "keywords": ["integral", "integration by parts", "exponential", "calculus", "ilate", "antiderivative"]
+  },
+  {
+    "id": "MATH-QUAD-002",
+    "subject": "Mathematics",
+    "topic": "Algebra - Higher Order Quadratic & Complex Roots",
+    "difficulty": "Hard (JEE Main / Olympiad)",
+    "question": "Solve the quadratic equation with complex roots: 2x^2 - 6x + 9 = 0",
+    "question_odia": "ଜଟିଳ ମୂଳ ଥିବା ଦ୍ୱିଘାତ ସମୀକରଣ ସମାଧାନ କରନ୍ତୁ: 2x^2 - 6x + 9 = 0",
+    "question_hindi": "सम्मिश्र मूल वाले द्विघात समीकरण को हल कीजिए: 2x^2 - 6x + 9 = 0",
+    "formulas": ["Quadratic Formula: x = [-b ± √(b^2 - 4ac)] / (2a)", "Discriminant D = b^2 - 4ac"],
+    "steps": [
+      "Step 1 (Identify Coefficients): For the standard form ax^2 + bx + c = 0, we identify a = 2, b = -6, and c = 9.",
+      "Step 2 (Calculate the Discriminant): D = b^2 - 4ac = (-6)^2 - 4(2)(9) = 36 - 72 = -36. Since D < 0, the equation possesses two complex conjugate roots.",
+      "Step 3 (Evaluate the Square Root of Negative Discriminant): √(-36) = √(36) * √(-1) = 6i, where i = √(-1).",
+      "Step 4 (Compute Roots using Quadratic Formula): x = [-(-6) ± 6i] / (2 * 2) = (6 ± 6i) / 4 = (3/2) ± (3/2)i."
+    ],
+    "result": "x = 3/2 ± (3/2)i",
+    "keywords": ["quadratic", "complex roots", "discriminant", "imaginary", "algebra", "equations"]
+  },
+  {
+    "id": "PHYS-MECH-003",
+    "subject": "Physics",
+    "topic": "Mechanics - Projectile Motion on an Inclined Plane",
+    "difficulty": "Very Hard (JEE Advanced)",
+    "question": "Derive the maximum range R_max of a projectile launched with speed u up an inclined plane of inclination angle beta.",
+    "question_odia": "ଏକ ନତ ସମତଳ (inclined plane) ଉପରକୁ u ବେଗରେ ପ୍ରକ୍ଷିପ୍ତ ବସ୍ତୁର ସର୍ବାଧିକ ଦୂରତା (R_max) ସୂତ୍ର ପ୍ରମାଣ କରନ୍ତୁ।",
+    "question_hindi": "बीटा (beta) झुकाव वाले नत समतल पर u चाल से प्रक्षेपित प्रक्षेप्य की अधिकतम परास (R_max) ज्ञात कीजिए।",
+    "formulas": ["R = [2 * u^2 * sin(theta - beta) * cos(theta)] / [g * cos^2(beta)]", "R_max = u^2 / [g * (1 + sin(beta))]"],
+    "steps": [
+      "Step 1 (Coordinate Transformation): Align the x-axis along the inclined plane (angle beta) and the y-axis perpendicular to it. The components of gravitational acceleration become g_x = -g * sin(beta) and g_y = -g * cos(beta).",
+      "Step 2 (Time of Flight T): Setting y(T) = 0 yields u_y * T - (1/2) * g_y * T^2 = 0 => T = [2 * u * sin(alpha)] / [g * cos(beta)], where alpha = theta - beta is the angle of launch relative to the incline.",
+      "Step 3 (Range along Incline): R = u_x * T - (1/2) * g * sin(beta) * T^2 = [u^2 / (g * cos^2(beta))] * [sin(2*alpha + beta) - sin(beta)].",
+      "Step 4 (Maximizing Range): The range is maximized when sin(2*alpha + beta) = 1 (i.e., 2*alpha + beta = 90° => alpha = 45° - beta/2). Substituting gives R_max = u^2 / [g * (1 + sin(beta))]."
+    ],
+    "result": "R_max = u^2 / [g * (1 + sin(beta))]",
+    "keywords": ["projectile", "inclined plane", "range", "mechanics", "kinematics", "physics", "jee advanced"]
+  },
+  {
+    "id": "PHYS-ELECTRO-004",
+    "subject": "Physics",
+    "topic": "Electromagnetism - RLC Resonance Circuit",
+    "difficulty": "Hard (Class 12 / JEE / NEET)",
+    "question": "In a series RLC AC circuit with R = 10 ohms, L = 0.1 H, and C = 10 microfarads, calculate the resonant angular frequency omega_0 and Quality factor Q.",
+    "question_odia": "ଏକ ଶ୍ରେଣୀ RLC AC ସର୍କିଟରେ R = 10 Ω, L = 0.1 H, ଏବଂ C = 10 μF ଥିଲେ ଅନୁନାଦ ଆବୃତ୍ତି (omega_0) ଏବଂ Quality factor (Q) ନିର୍ଣ୍ଣୟ କରନ୍ତୁ।",
+    "question_hindi": "एक श्रेणी RLC परिपथ में R = 10 ओम, L = 0.1 H तथा C = 10 माइक्रोफैरड के लिए अनुनादी कोणीय आवृत्ति omega_0 तथा Q-गुणांक की गणना कीजिए।",
+    "formulas": ["omega_0 = 1 / √(L * C)", "Quality Factor Q = (omega_0 * L) / R = (1 / R) * √(L / C)"],
+    "steps": [
+      "Step 1 (Calculate Resonant Angular Frequency): omega_0 = 1 / √(L * C). Given L = 0.1 H and C = 10 * 10^(-6) F = 10^(-5) F, L * C = 0.1 * 10^(-5) = 10^(-6) s^2. Hence, omega_0 = 1 / √(10^(-6)) = 1 / 10^(-3) = 1000 rad/s.",
+      "Step 2 (Calculate Inductive Reactance at Resonance): X_L = omega_0 * L = 1000 rad/s * 0.1 H = 100 ohms.",
+      "Step 3 (Calculate Quality Factor Q): Q = X_L / R = 100 ohms / 10 ohms = 10.",
+      "Step 4 (Physical Interpretation): A Quality Factor of 10 signifies sharp selectivity and resonant voltage magnification across the reactive components."
+    ],
+    "result": "omega_0 = 1000 rad/s, Quality Factor Q = 10",
+    "keywords": ["rlc circuit", "resonance", "quality factor", "angular frequency", "electromagnetism", "ac circuit"]
+  },
+  {
+    "id": "CHEM-ORG-005",
+    "subject": "Chemistry",
+    "topic": "Organic Chemistry - Aldol Condensation Mechanism",
+    "difficulty": "Hard (NEET / JEE / Class 12)",
+    "question": "Explain the step-by-step mechanism of base-catalyzed aldol condensation of acetaldehyde (ethanal) to crotonaldehyde.",
+    "question_odia": "ଆସେଟାଲଡିହାଇଡ୍ ର କ୍ଷାରୀୟ ଆଲଡୋଲ କଣ୍ଡେନସେସନ ପ୍ରକ୍ରିୟା ମାଧ୍ୟମରେ କ୍ରୋଟୋନାଲଡିହାଇଡ୍ ଗଠନର କାର୍ଯ୍ୟପ୍ରଣାଳୀ ବୁଝାଅ।",
+    "question_hindi": "तनु क्षार की उपस्थिति में एसीटैल्डिहाइड के ऐल्डोल संघनन की सम्पूर्ण क्रियाविधि समझाइए।",
+    "formulas": ["2 CH3CHO --[OH-]--> CH3-CH(OH)-CH2-CHO --[Heat, -H2O]--> CH3-CH=CH-CHO"],
+    "steps": [
+      "Step 1 (Enolate Ion Formation): The hydroxide base (OH-) deprotonates an alpha-hydrogen from an acetaldehyde molecule (CH3-CHO), forming a resonance-stabilized carbanion enolate ion [:CH2-CHO <-> CH2=CH-O-].",
+      "Step 2 (Nucleophilic Addition): The nucleophilic enolate ion attacks the electrophilic carbonyl carbon of a second acetaldehyde molecule, forming an alkoxide intermediate [CH3-CH(O-) - CH2-CHO].",
+      "Step 3 (Proton Transfer - Aldol Formation): The alkoxide abstracts a proton from water to regenerate OH-, producing 3-hydroxybutanal (the Aldol: CH3-CH(OH)-CH2-CHO).",
+      "Step 4 (Dehydration to alpha,beta-unsaturated aldehyde): Upon heating, base-induced E1cb elimination of water (-H2O) occurs across the alpha-beta bond, yielding the conjugated, thermodynamically stable crotonaldehyde (but-2-enal: CH3-CH=CH-CHO)."
+    ],
+    "result": "Forms 3-hydroxybutanal (Aldol), then dehydrates to But-2-enal (Crotonaldehyde)",
+    "keywords": ["aldol", "condensation", "enolate", "acetaldehyde", "crotonaldehyde", "organic chemistry", "reaction mechanism"]
+  },
+  {
+    "id": "ODIA-LIT-006",
+    "subject": "Odisha Studies",
+    "topic": "Odia Literature & Classical Heritage",
+    "difficulty": "Medium-Hard (OPSC / State Competitive)",
+    "question": "What is the historical significance of Sarala Das's Mahabharata in the evolution of classical Odia language?",
+    "question_odia": "ଓଡ଼ିଆ ଭାଷା ଓ ସାହିତ୍ୟର ବିକାଶରେ ଆଦିକବି ସାରଳା ଦାସଙ୍କ 'ସାରଳା ମହାଭାରତ'ର ଐତିହାସିକ ଗୁରୁତ୍ୱ କଣ?",
+    "question_hindi": "ओड़िया भाषा और साहित्य के विकास में आदिकवि सारला दास के 'सारला महाभारत' के ऐतिहासिक महत्व की व्याख्या करें।",
+    "formulas": ["ଦାଣ୍ଡି ବୃତ୍ତ (Dandi Brutta) ଛନ୍ଦ"],
+    "steps": [
+      "Step 1 (ଆଦିକବିଙ୍କ ପରିଚୟ): ପଞ୍ଚଦଶ ଶତାବ୍ଦୀର କପିଳେନ୍ଦ୍ର ଦେବଙ୍କ ରାଜତ୍ୱ କାଳରେ ଆଦିକବି ସାରଳା ଦାସ ଓଡ଼ିଆ ଜାତୀୟତାର ମୂଳଦୁଆ ସ୍ଥାପନ କରିଥିଲେ।",
+      "Step 2 (ଦାଣ୍ଡି ବୃତ୍ତ ଛନ୍ଦ): ସଂସ୍କୃତ ନିୟମର କଠିନ ଆବଦ୍ଧତାରୁ ମୁକ୍ତ ହୋଇ ସେ ଲୋକଭାଷା ଏବଂ 'ଦାଣ୍ଡି ବୃତ୍ତ' ଛନ୍ଦର ପ୍ରୟୋଗ କରି ଓଡ଼ିଆ ଭାଷାକୁ ଜନସାଧାରଣଙ୍କ ଭାଷାରେ ପରିଣତ କରିଥିଲେ।",
+      "Step 3 (ମୌଳିକ ସଂସ୍କୃତି ଓ ଚରିତ୍ର): ସଂସ୍କୃତ ମହାଭାରତର ଅବିକଳ ଅନୁବାଦ ନକରି ସେଥିରେ ଓଡ଼ିଶାର ଖାଦ୍ୟପେୟ, ପର୍ବପର୍ବାଣି, ଯୁଦ୍ଧ କୌଶଳ ଓ ସମାଜର ପ୍ରକୃତ ଚିତ୍ର ଅଙ୍କନ କରିଥିଲେ।",
+      "Step 4 (ସାରାଂଶ): ସାରଳା ମହାଭାରତ ଓଡ଼ିଆ ଭାଷାକୁ 'ଶାସ୍ତ୍ରୀୟ ଭାଷା' (Classical Language) ମାନ୍ୟତା ମିଳିବାର ପ୍ରମୁଖ ଐତିହାସିକ ପ୍ରମାଣ ଅଟେ।"
+    ],
+    "result": "ଓଡ଼ିଆ ଭାଷା ଓ ଜାତୀୟତାର ଆଦିମହାନ ସ୍ତମ୍ଭ ଏବଂ ଶାସ୍ତ୍ରୀୟ ପ୍ରମାଣ",
+    "keywords": ["sarala das", "odia mahabharata", "dandi brutta", "odia literature", "opsc", "classical language"]
+  }
+]

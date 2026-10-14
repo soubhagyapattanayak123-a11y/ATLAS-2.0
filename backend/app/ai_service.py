@@ -3,7 +3,13 @@ import re
 import json
 import urllib.request
 import urllib.error
+from pathlib import Path
 from typing import Dict, Any, List
+from dotenv import load_dotenv
+
+# Ensure .env is loaded from backend directory
+_backend_dir = Path(__file__).resolve().parent.parent
+load_dotenv(_backend_dir / ".env")
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
@@ -59,8 +65,14 @@ def call_openrouter(messages: List[Dict[str, str]], temperature: float = 0.3) ->
     raise RuntimeError(f"OpenRouter request failed across all candidate models: {last_error}")
 
 
+from .knowledge_rag import find_relevant_exemplars, format_exemplars_for_prompt
+
+
 def solve_math_problem(problem: str, language: str = "English") -> Dict[str, Any]:
     """Solve mathematics problem with verified, step-by-step explanations in target language."""
+    exemplars = find_relevant_exemplars(problem, language, max_exemplars=2)
+    exemplar_block = format_exemplars_for_prompt(exemplars, language)
+
     system_prompt = (
         f"You are the Advanced Academic Mathematics and Science Problem Solver in ATLAS 2.0. "
         f"The user has selected the language: {language}. "
@@ -70,6 +82,8 @@ def solve_math_problem(problem: str, language: str = "English") -> Dict[str, Any
         f"'steps' (a list of clear step strings) and 'result' (a concise string of the final solution). "
         f"Respond in {language}. Return ONLY the JSON object, without markdown ticks or commentary."
     )
+    if exemplar_block:
+        system_prompt += f"\n\n{exemplar_block}"
 
     messages = [
         {"role": "system", "content": system_prompt},

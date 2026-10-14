@@ -1446,6 +1446,104 @@ async def handle_secure_webhook(
 
 
 # =========================================================================
+# DATASET TRAINING & COMPLEX PROBLEM BANK (Item 16: In-Context Learning & Fine-Tuning)
+# =========================================================================
+from .knowledge_rag import load_dataset, DATASET_PATH
+
+class AddProblemRequest(BaseModel):
+    subject: str = Field(..., example="Mathematics")
+    topic: str = Field(..., example="Calculus - Integration")
+    difficulty: str = Field(default="Hard", example="Hard (JEE / Class 12)")
+    question: str = Field(..., example="Evaluate integral of x*sin(x) dx")
+    question_odia: Optional[str] = None
+    question_hindi: Optional[str] = None
+    formulas: List[str] = Field(default_factory=list)
+    steps: List[str] = Field(..., example=["Step 1...", "Step 2..."])
+    result: str = Field(..., example="-x*cos(x) + sin(x) + C")
+    keywords: List[str] = Field(default_factory=list)
+
+
+@app.get("/api/ai/dataset/stats", tags=["AI Training & Dataset Management"])
+def get_dataset_stats():
+    """Retrieve statistical distribution of complex problem dataset."""
+    dataset = load_dataset()
+    subjects: Dict[str, int] = {}
+    difficulties: Dict[str, int] = {}
+    for item in dataset:
+        s = item.get("subject", "General")
+        d = item.get("difficulty", "Hard")
+        subjects[s] = subjects.get(s, 0) + 1
+        difficulties[d] = difficulties.get(d, 0) + 1
+    return {
+        "total_problems": len(dataset),
+        "subjects": subjects,
+        "difficulties": difficulties,
+        "dataset_path": str(DATASET_PATH),
+    }
+
+
+@app.get("/api/ai/dataset/problems", tags=["AI Training & Dataset Management"])
+def get_dataset_problems():
+    """Retrieve all curated complex problems with steps and formulas."""
+    return load_dataset()
+
+
+@app.post("/api/ai/dataset/add", tags=["AI Training & Dataset Management"], status_code=status.HTTP_201_CREATED)
+def add_complex_problem(payload: AddProblemRequest, user: dict = Depends(get_current_admin_user)):
+    """Add a new verified complex problem to the training knowledge base."""
+    dataset = load_dataset()
+    new_id = f"{payload.subject[:4].upper()}-{len(dataset) + 1:03d}"
+    new_record = {
+        "id": new_id,
+        "subject": payload.subject,
+        "topic": payload.topic,
+        "difficulty": payload.difficulty,
+        "question": payload.question,
+        "question_odia": payload.question_odia,
+        "question_hindi": payload.question_hindi,
+        "formulas": payload.formulas,
+        "steps": payload.steps,
+        "result": payload.result,
+        "keywords": payload.keywords or [k.lower() for k in payload.topic.split()],
+    }
+    dataset.append(new_record)
+    with open(DATASET_PATH, "w", encoding="utf-8") as f:
+        json.dump(dataset, f, indent=2, ensure_ascii=False)
+    return {
+        "message": "Problem successfully added to complex dataset bank",
+        "problem_id": new_id,
+        "total_problems": len(dataset),
+    }
+
+
+@app.get("/api/ai/dataset/export", tags=["AI Training & Dataset Management"])
+def export_dataset_jsonl():
+    """Export the training dataset formatted for OpenAI / HuggingFace fine-tuning."""
+    dataset = load_dataset()
+    lines = []
+    for item in dataset:
+        subject = item.get("subject", "STEM")
+        steps = "\n\n".join(item.get("steps", []))
+        result = item.get("result", "")
+        solution_body = f"{steps}\n\n**Final Answer:** {result}"
+        en_q = item.get("question")
+        if en_q:
+            lines.append(json.dumps({
+                "messages": [
+                    {"role": "system", "content": f"You are the Advanced Academic Problem Solver in ATLAS 2.0. Solve this {subject} problem step-by-step with verified formulas."},
+                    {"role": "user", "content": en_q},
+                    {"role": "assistant", "content": solution_body}
+                ]
+            }, ensure_ascii=False))
+    jsonl_content = "\n".join(lines)
+    return Response(
+        content=jsonl_content,
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": 'attachment; filename="atlas_finetune_train.jsonl"'},
+    )
+
+
+# =========================================================================
 # Production Deployment: Serve Built React Frontend SPA (if dist exists)
 # =========================================================================
 _frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
