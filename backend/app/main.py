@@ -355,6 +355,11 @@ def verify_email_otp(payload: VerifyOTPRequest, conn: sqlite3.Connection = Depen
     success, message, _ = verify_and_consume_otp(
         conn, payload.email, payload.otp_code, purpose="login"
     )
+    if not success:
+        # Symmetrical fallback: allow login if OTP was requested with registration purpose
+        success, message, _ = verify_and_consume_otp(
+            conn, payload.email, payload.otp_code, purpose="register"
+        )
 
     if not success:
         raise HTTPException(

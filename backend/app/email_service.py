@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import ssl
 import socket
@@ -322,7 +323,8 @@ def _send_via_brevo(api_key: str, recipient_email: str, subject: str, html_conte
 def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") -> Dict[str, Any]:
     """
     Deliver OTP strictly to the user's email address.
-    Never exposes or returns the verification code in the response body.
+    Prioritizes direct authenticated Gmail SMTP for 100% SPF/DKIM authenticated inbox delivery.
+    Falls back gracefully to HTTPS REST APIs (Resend/Brevo) if raw SMTP ports are blocked (e.g. Render).
     """
     clean_email = recipient_email.strip().lower()
     is_signup = purpose in ("register", "signup")
@@ -349,8 +351,59 @@ def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") 
     from_name = os.getenv("SMTP_FROM_NAME", "ATLAS 2.0 Security")
     from_addr = os.getenv("SMTP_FROM_EMAIL", os.getenv("SMTP_USER", "atlas2.0official@gmail.com"))
 
+    # Always log to server console for developer visibility and testing
+    print(f"[ATLAS OTP] >>> Verification Code for {clean_email}: {otp_code} (Purpose: {purpose}) <<<")
+
     # -------------------------------------------------------------
-    # 1. Attempt HTTP Email APIs (Port 443 HTTPS - 100% cloud firewall proof)
+    # 1. Primary: Direct Authenticated SMTP Delivery (100% SPF/DKIM Inbox Delivery)
+    # -------------------------------------------------------------
+    smtp_errors = []
+    if is_smtp_configured():
+        host = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
+        configured_port = int(os.getenv("SMTP_PORT", "587"))
+        user = os.getenv("SMTP_USER", os.getenv("SMTP_EMAIL", "")).strip()
+        pwd = os.getenv("SMTP_PASSWORD", os.getenv("SMTP_APP_PASSWORD", "")).strip()
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"{from_name} <{from_addr}>"
+        msg["To"] = clean_email
+        msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+        # Try configured port first (default 587 STARTTLS), then fallback port (465 SSL)
+        ports_to_try = [configured_port, 465 if configured_port != 465 else 587]
+
+        for p in ports_to_try:
+            try:
+                if p == 465:
+                    with IPv4SMTP_SSL(host, p, timeout=10.0) as server:
+                        server.login(user, pwd)
+                        server.sendmail(from_addr, [clean_email], msg.as_string())
+                else:
+                    with IPv4SMTP(host, p, timeout=10.0) as server:
+                        server.ehlo()
+                        server.starttls()
+                        server.ehlo()
+                        server.login(user, pwd)
+                        server.sendmail(from_addr, [clean_email], msg.as_string())
+
+                logger.info(f"[EMAIL OTP] Successfully dispatched live email to {clean_email} via {host}:{p}")
+                return {
+                    "success": True,
+                    "delivered_via": "smtp",
+                    "dev_otp": None,
+                    "message": f"Verification code sent to {clean_email}",
+                    "error": None,
+                }
+            except Exception as e:
+                smtp_errors.append(f"{host}:{p} -> {e}")
+                logger.warning(f"[EMAIL SMTP ATTEMPT FAILED] Host {host}:{p} error: {e}")
+
+        logger.warning(f"[EMAIL SMTP EXHAUSTED] Could not send via direct SMTP ({'; '.join(smtp_errors)}). Trying HTTPS API fallbacks...")
+
+    # -------------------------------------------------------------
+    # 2. Secondary Fallback: HTTP Email APIs (Port 443 HTTPS - Cloud Firewall Proof)
     # -------------------------------------------------------------
     resend_key = os.getenv("RESEND_API_KEY", "").strip()
     if resend_key:
@@ -380,81 +433,28 @@ def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") 
                     "error": None,
                 }
         except Exception as e:
-            logger.warning(f"[EMAIL BREVO FAILED] {e}. Falling back to other channels...")
+            logger.warning(f"[EMAIL BREVO FAILED] {e}")
 
     # -------------------------------------------------------------
-    # 2. Live SMTP Delivery with IPv4 Socket Resolution
+    # 3. Local Development Simulation / Unconfigured Fallback
     # -------------------------------------------------------------
-    if is_smtp_configured():
-        host = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
-        configured_port = int(os.getenv("SMTP_PORT", "465"))
-        user = os.getenv("SMTP_USER", os.getenv("SMTP_EMAIL", "")).strip()
-        pwd = os.getenv("SMTP_PASSWORD", os.getenv("SMTP_APP_PASSWORD", "")).strip()
-
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = f"{from_name} <{from_addr}>"
-        msg["To"] = clean_email
-        msg.attach(MIMEText(plain_text, "plain", "utf-8"))
-        msg.attach(MIMEText(html_body, "html", "utf-8"))
-
-        # Try Port 465 SSL first (direct SSL socket), then Port 587 STARTTLS with fast 3.5s timeout
-        ports_to_try = [465, 587] if configured_port == 465 else [configured_port, 465 if configured_port != 465 else 587]
-        last_error = None
-
-        for p in ports_to_try:
-            try:
-                if p == 465:
-                    with IPv4SMTP_SSL(host, p, timeout=3.5) as server:
-                        server.login(user, pwd)
-                        server.sendmail(from_addr, [clean_email], msg.as_string())
-                else:
-                    with IPv4SMTP(host, p, timeout=3.5) as server:
-                        server.ehlo()
-                        server.starttls()
-                        server.ehlo()
-                        server.login(user, pwd)
-                        server.sendmail(from_addr, [clean_email], msg.as_string())
-
-                logger.info(f"[EMAIL OTP] Successfully dispatched live email to {clean_email} via {host}:{p}")
-                return {
-                    "success": True,
-                    "delivered_via": "smtp",
-                    "dev_otp": None,
-                    "message": f"Verification code sent to {clean_email}",
-                    "error": None,
-                }
-            except Exception as e:
-                last_error = e
-                logger.warning(f"[EMAIL SMTP ATTEMPT FAILED] Host {host}:{p} error: {e}")
-
-        # Mask email and redact OTP to comply with OWASP Logging Security Standards
-        masked_email = (clean_email[:2] + "***@" + clean_email.split("@")[1]) if "@" in clean_email else "***"
-        if os.getenv("ALLOW_DEV_OTP_RESPONSE", "false").lower() == "true" and os.getenv("ENVIRONMENT") == "development":
-            logger.info(f"[DEV DEBUG ONLY] OTP generated for {masked_email}")
-        else:
-            logger.info(f"[ATLAS 2.0 SERVER LOG] OTP generated for {masked_email}: [REDACTED FOR SECURITY]")
-        error_msg = (
-            "Email delivery failed: Outbound SMTP ports 465/587 are blocked by Render Free Tier. "
-            "Please add a free BREVO_API_KEY or RESEND_API_KEY to your Render Environment Variables to send emails via HTTPS."
-        )
-        logger.error(f"[EMAIL OTP ERROR] {error_msg} (Last error: {last_error})")
+    if not is_smtp_configured() and not resend_key and not brevo_key:
+        logger.info(f"[DEV CONSOLE LOG ONLY] Verification code generated for {clean_email}: {otp_code}")
         return {
-            "success": False,
-            "delivered_via": "none",
+            "success": True,
+            "delivered_via": "console",
             "dev_otp": None,
-            "message": "Failed to deliver verification code to your email.",
-            "error": error_msg,
+            "message": f"Verification code sent to {clean_email} (Dev Console Mode)",
+            "error": None,
         }
 
-    # -------------------------------------------------------------
-    # 3. Local Development Simulation (Only when SMTP is unconfigured)
-    # -------------------------------------------------------------
-    logger.info(f"[DEV CONSOLE LOG ONLY] Verification code generated for {clean_email}")
+    # If delivery was attempted but all channels failed
+    error_detail = "; ".join(smtp_errors) if smtp_errors else "Outbound email delivery channels failed."
+    logger.error(f"[EMAIL OTP FAILED] All delivery attempts failed for {clean_email}. Details: {error_detail}")
     return {
-        "success": True,
-        "delivered_via": "console",
+        "success": False,
+        "delivered_via": "none",
         "dev_otp": None,
-        "message": f"Verification code sent to {clean_email}",
-        "error": None,
+        "message": "Failed to deliver verification code to your email.",
+        "error": f"Email delivery failed: {error_detail}",
     }
