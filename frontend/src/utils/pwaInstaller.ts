@@ -259,41 +259,244 @@ export function downloadStandaloneOfflineHtml(): void {
   </div>
 
   <script>
-    function solveMath() {
-      const p = document.getElementById('math-input').value.trim();
-      const lang = document.getElementById('math-lang').value;
-      const res = document.getElementById('math-result');
-      if (!p) { res.innerText = 'Please enter a mathematical expression.'; return; }
-      
-      let steps = [];
-      let ans = '';
+    function gcdVal(a, b) {
+      a = Math.abs(Math.round(a));
+      b = Math.abs(Math.round(b));
+      while (b) { var t = b; b = a % b; a = t; }
+      return a || 1;
+    }
 
-      if (p.includes('=')) {
-        steps.push('Detected algebraic linear equation: ' + p);
-        steps.push('Isolating variable terms on the left side and constants on the right side.');
-        steps.push('Simplifying both sides using standard algebraic rules.');
-        ans = 'Solution verified successfully.';
-      } else {
-        try {
-          const sanitized = p.replace(/sin/g, 'Math.sin')
-                             .replace(/cos/g, 'Math.cos')
-                             .replace(/tan/g, 'Math.tan')
-                             .replace(/sqrt/g, 'Math.sqrt')
-                             .replace(/\\^/g, '**');
-          const evaluated = Function('"use strict"; return (' + sanitized + ')')();
-          steps.push('Input parsed: ' + p);
-          steps.push('Evaluating operations following standard PEMDAS / BODMAS priority.');
-          steps.push('Calculated result = ' + evaluated);
-          ans = evaluated.toString();
-        } catch(e) {
-          steps.push('Interpreting equation: ' + p);
-          steps.push('Applying polynomial expansion and factorization principles.');
-          ans = 'Evaluated';
+    function toFrac(val) {
+      if (Math.abs(val - Math.round(val)) < 1e-6) return Math.round(val).toString();
+      var sign = val < 0 ? '-' : '';
+      var pos = Math.abs(val);
+      for (var d = 2; d <= 200; d++) {
+        var n = Math.round(pos * d);
+        if (Math.abs(pos - n / d) < 1e-5) {
+          var g = gcdVal(n, d);
+          var num = n / g;
+          var den = d / g;
+          return den === 1 ? (sign + num) : (sign + num + '/' + den);
+        }
+      }
+      return val.toFixed(4).replace(/\.?0+$/, '');
+    }
+
+    function parsePolySide(sideStr, v) {
+      var a = 0, b = 0, c = 0;
+      var s = sideStr.trim().replace(/²/g, '^2').replace(new RegExp('([' + v + '])2(?!\\\\d)', 'gi'), '$1^2').replace(/×/g, '*').replace(/\\s+/g, '');
+      if (!s) return { a: a, b: b, c: c };
+
+      var factRegex = new RegExp('^(?:([+-]?\\\\d*\\\\.?\\\\d*)\\\\*?)?\\\\(([+-]?\\\\d*\\\\.?\\\\d*)' + v + '([+-]\\\\d+\\\\.?\\\\d*)\\\\)\\\\*?\\\\(([+-]?\\\\d*\\\\.?\\\\d*)' + v + '([+-]\\\\d+\\\\.?\\\\d*)\\\\)$', 'i');
+      var factMatch = s.match(factRegex);
+      if (factMatch) {
+        var k = factMatch[1] ? (factMatch[1] === '-' ? -1 : parseFloat(factMatch[1])) : 1;
+        var a1 = factMatch[2] === '' || factMatch[2] === '+' ? 1 : (factMatch[2] === '-' ? -1 : parseFloat(factMatch[2]));
+        var b1 = parseFloat(factMatch[3]);
+        var a2 = factMatch[4] === '' || factMatch[4] === '+' ? 1 : (factMatch[4] === '-' ? -1 : parseFloat(factMatch[4]));
+        var b2 = parseFloat(factMatch[5]);
+        return { a: k * (a1 * a2), b: k * (a1 * b2 + a2 * b1), c: k * (b1 * b2) };
+      }
+
+      var sqRegex = new RegExp('^(?:([+-]?\\\\d*\\\\.?\\\\d*)\\\\*?)?\\\\(([+-]?\\\\d*\\\\.?\\\\d*)' + v + '([+-]\\\\d+\\\\.?\\\\d*)\\\\)\\\\^2$', 'i');
+      var sqMatch = s.match(sqRegex);
+      if (sqMatch) {
+        var k2 = sqMatch[1] ? (sqMatch[1] === '-' ? -1 : parseFloat(sqMatch[1])) : 1;
+        var a1_2 = sqMatch[2] === '' || sqMatch[2] === '+' ? 1 : (sqMatch[2] === '-' ? -1 : parseFloat(sqMatch[2]));
+        var b1_2 = parseFloat(sqMatch[3]);
+        return { a: k2 * (a1_2 * a1_2), b: k2 * (2 * a1_2 * b1_2), c: k2 * (b1_2 * b1_2) };
+      }
+
+      var monoRegex = new RegExp('^(?:([+-]?\\\\d*\\\\.?\\\\d*)\\\\*?)?' + v + '\\\\*?\\\\(([+-]?\\\\d*\\\\.?\\\\d*)' + v + '([+-]\\\\d+\\\\.?\\\\d*)\\\\)$', 'i');
+      var monoMatch = s.match(monoRegex);
+      if (monoMatch) {
+        var k3 = monoMatch[1] ? (monoMatch[1] === '-' ? -1 : parseFloat(monoMatch[1])) : 1;
+        var a1_3 = monoMatch[2] === '' || monoMatch[2] === '+' ? 1 : (monoMatch[2] === '-' ? -1 : parseFloat(monoMatch[2]));
+        var b1_3 = parseFloat(monoMatch[3]);
+        return { a: k3 * a1_3, b: k3 * b1_3, c: 0 };
+      }
+
+      var terms = s.match(/([+-]?[^+-]+)/g);
+      if (!terms) return { a: a, b: b, c: c };
+
+      for (var i = 0; i < terms.length; i++) {
+        var t = terms[i];
+        if (!t) continue;
+        var m2 = t.match(new RegExp('^([+-]?\\\\d*\\\\.?\\\\d*)\\\\*?' + v + '(?:\\\\^2|\\\\*' + v + ')$', 'i'));
+        if (m2) {
+          var cStr = m2[1];
+          var coeff = (cStr === '' || cStr === '+') ? 1 : (cStr === '-' ? -1 : parseFloat(cStr));
+          if (!isNaN(coeff)) a += coeff;
+          continue;
+        }
+        var m1 = t.match(new RegExp('^([+-]?\\\\d*\\\\.?\\\\d*)\\\\*?' + v + '$', 'i'));
+        if (m1) {
+          var cStr1 = m1[1];
+          var coeff1 = (cStr1 === '' || cStr1 === '+') ? 1 : (cStr1 === '-' ? -1 : parseFloat(cStr1));
+          if (!isNaN(coeff1)) b += coeff1;
+          continue;
+        }
+        var cVal = parseFloat(t);
+        if (!isNaN(cVal)) c += cVal;
+      }
+      return { a: a, b: b, c: c };
+    }
+
+    function parseEquation(input) {
+      var clean = input.replace(/^[^:]*:\\s*/, '').replace(/solve(?:\\s+for\\s+[a-zA-Z])?/gi, '').replace(/find\\s+roots?\\s+of/gi, '').replace(/roots?\\s+of/gi, '').replace(/equation[:\\s]*/gi, '').replace(/²/g, '^2').trim();
+      var vMatch = clean.match(/\\b([xXyYzZtTnN])\\b/) || clean.match(/([xXyYzZtTnN])/);
+      if (!vMatch) return null;
+      var v = vMatch[1].toLowerCase();
+
+      var lhsStr = clean;
+      var rhsStr = '0';
+      if (clean.indexOf('=') !== -1) {
+        var parts = clean.split('=');
+        lhsStr = parts[0];
+        rhsStr = parts.slice(1).join('=');
+      }
+
+      var left = parsePolySide(lhsStr, v);
+      var right = parsePolySide(rhsStr, v);
+      var a = Math.round((left.a - right.a) * 1e6) / 1e6;
+      var b = Math.round((left.b - right.b) * 1e6) / 1e6;
+      var c = Math.round((left.c - right.c) * 1e6) / 1e6;
+      if (a === 0 && b === 0 && c === 0) return null;
+      return { a: a, b: b, c: c, v: v };
+    }
+
+    function solveMath() {
+      var p = document.getElementById('math-input').value.trim();
+      var lang = document.getElementById('math-lang').value;
+      var res = document.getElementById('math-result');
+      if (!p) { res.innerText = 'Please enter a mathematical expression.'; return; }
+
+      var isOdia = ['odia', 'or', 'or-in'].indexOf(lang.toLowerCase()) !== -1;
+      var isHindi = ['hindi', 'hi', 'hi-in'].indexOf(lang.toLowerCase()) !== -1;
+
+      var poly = parseEquation(p);
+      if (poly) {
+        var v = poly.v;
+        if (poly.a !== 0) {
+          var a = poly.a, b = poly.b, c = poly.c;
+          var D = Math.round((b * b - 4 * a * c) * 1e6) / 1e6;
+          var std = (a === 1 ? '' : (a === -1 ? '-' : a)) + v + '²' + (b > 0 ? ' + ' + (b === 1 ? '' : b) : (b < 0 ? ' - ' + (Math.abs(b) === 1 ? '' : Math.abs(b)) : '')) + (b !== 0 ? v : '') + (c > 0 ? ' + ' + c : (c < 0 ? ' - ' + Math.abs(c) : '')) + ' = 0';
+          var steps = [];
+          var finalAns = '';
+
+          if (D > 0) {
+            var sqrtD = Math.sqrt(D);
+            var isSq = Math.abs(sqrtD - Math.round(sqrtD)) < 1e-6;
+            var r1 = (-b + sqrtD) / (2 * a);
+            var r2 = (-b - sqrtD) / (2 * a);
+            var r1Str = toFrac(r1), r2Str = toFrac(r2);
+            finalAns = v + '₁ = ' + r1Str + ', ' + v + '₂ = ' + r2Str;
+
+            if (isOdia) {
+              steps.push('ପଦକ୍ଷେପ ୧ (ମାନକ ରୂପ): ଦ୍ୱିଘାତ ସମୀକରଣ ax² + bx + c = 0:\n' + std);
+              steps.push('ପଦକ୍ଷେପ ୨ (ସହଗ ଚିହ୍ନଟ): a = ' + a + ', b = ' + b + ', c = ' + c);
+              steps.push('ପଦକ୍ଷେପ ୩ (ପ୍ରଭେଦକ D ନିରୂପଣ): D = b² - 4ac = (' + b + ')² - 4(' + a + ')(' + c + ') = ' + D);
+              steps.push('ପଦକ୍ଷେପ ୪ (ବୀଜର ପ୍ରକୃତି): ଯେହେତୁ D = ' + D + ' > 0, ଏହି ସମୀକରଣର ଦୁଇଟି ବାସ୍ତବ ଓ ଅସମାନ ମୂଳ (Two Distinct Real Roots) ଅଛି।');
+              steps.push('ପଦକ୍ଷେପ ୫ (ଦ୍ୱିଘାତ ସୂତ୍ର ପ୍ରୟୋଗ): ' + v + ' = (-b ± √D) / (2a) = (' + (-b) + ' ± ' + (isSq ? Math.round(sqrtD) : sqrtD.toFixed(4)) + ') / ' + (2 * a));
+              steps.push('ପଦକ୍ଷେପ ୬ (ଅନ୍ତିମ ମୂଳ): ' + v + '₁ = ' + r1Str + ', ' + v + '₂ = ' + r2Str);
+            } else if (isHindi) {
+              steps.push('चरण 1 (मानक रूप): मानक द्विघात समीकरण ax² + bx + c = 0:\n' + std);
+              steps.push('चरण 2 (गुणांक पहचान): a = ' + a + ', b = ' + b + ', c = ' + c);
+              steps.push('चरण 3 (विविक्तकर D की गणना): D = b² - 4ac = (' + b + ')² - 4(' + a + ')(' + c + ') = ' + D);
+              steps.push('चरण 4 (मूलों की प्रकृति): चूँकि D = ' + D + ' > 0, समीकरण के दो भिन्न वास्तविक मूल (Distinct Real Roots) हैं।');
+              steps.push('चरण 5 (द्विघाती सूत्र): ' + v + ' = (-b ± √D) / (2a) = (' + (-b) + ' ± ' + (isSq ? Math.round(sqrtD) : sqrtD.toFixed(4)) + ') / ' + (2 * a));
+              steps.push('चरण 6 (अंतिम मूल): ' + v + '₁ = ' + r1Str + ', ' + v + '₂ = ' + r2Str);
+            } else {
+              steps.push('Step 1 (Standard Form): Standard quadratic form ax² + bx + c = 0:\n' + std);
+              steps.push('Step 2 (Coefficients): a = ' + a + ', b = ' + b + ', c = ' + c);
+              steps.push('Step 3 (Discriminant D): D = b² - 4ac = (' + b + ')² - 4(' + a + ')(' + c + ') = ' + D);
+              steps.push('Step 4 (Nature of Roots): Since D = ' + D + ' > 0, the equation has two distinct real roots.');
+              steps.push('Step 5 (Quadratic Formula): ' + v + ' = (-b ± √D) / (2a) = (' + (-b) + ' ± ' + (isSq ? Math.round(sqrtD) : sqrtD.toFixed(4)) + ') / ' + (2 * a));
+              steps.push('Step 6 (Final Roots): ' + v + '₁ = ' + r1Str + ', ' + v + '₂ = ' + r2Str);
+            }
+          } else if (D === 0) {
+            var r = -b / (2 * a);
+            var rStr = toFrac(r);
+            finalAns = v + ' = ' + rStr + ' (Double Root)';
+            if (isOdia) {
+              steps.push('ପଦକ୍ଷେପ ୧ (ମାନକ ରୂପ): ' + std);
+              steps.push('ପଦକ୍ଷେପ ୨ (ପ୍ରଭେଦକ): D = 0');
+              steps.push('ପଦକ୍ଷେପ ୩ (ବୀଜର ପ୍ରକୃତି): ଦୁଇଟି ସମାନ ବାସ୍ତବ ମୂଳ (Two Equal Real Roots)');
+              steps.push('ପଦକ୍ଷେପ ୪ (ମୂଳ ନିର୍ଣ୍ଣୟ): ' + v + ' = -b / (2a) = ' + rStr);
+            } else if (isHindi) {
+              steps.push('चरण 1 (मानक रूप): ' + std);
+              steps.push('चरण 2 (विविक्तकर): D = 0');
+              steps.push('चरण 3 (मूलों की प्रकृति): दो बराबर वास्तविक मूल (Equal Real Roots)');
+              steps.push('चरण 4 (मूल गणना): ' + v + ' = -b / (2a) = ' + rStr);
+            } else {
+              steps.push('Step 1 (Standard Form): ' + std);
+              steps.push('Step 2 (Discriminant): D = 0');
+              steps.push('Step 3 (Nature of Roots): Two equal real roots (double root)');
+              steps.push('Step 4 (Calculate Root): ' + v + ' = -b / (2a) = ' + rStr);
+            }
+          } else {
+            var rp = -b / (2 * a);
+            var ip = Math.sqrt(-D) / Math.abs(2 * a);
+            var rpStr = toFrac(rp), ipStr = toFrac(ip);
+            var iSym = ipStr === '1' ? 'i' : ipStr + 'i';
+            finalAns = v + '₁ = ' + (rp === 0 ? iSym : rpStr + ' + ' + iSym) + ', ' + v + '₂ = ' + (rp === 0 ? '-' + iSym : rpStr + ' - ' + iSym);
+            if (isOdia) {
+              steps.push('ପଦକ୍ଷେପ ୧ (ମାନକ ରୂପ): ' + std);
+              steps.push('ପଦକ୍ଷେପ ୨ (ପ୍ରଭେଦକ): D = ' + D + ' < 0');
+              steps.push('ପଦକ୍ଷେପ ୩ (ବୀଜର ପ୍ରକୃତି): କୌଣସି ବାସ୍ତବ ମୂଳ ନାହିଁ, ଦୁଇଟି ଜଟିଳ/କାଳ୍ପନିକ ଅନୁବନ୍ଧୀ ମୂଳ (Complex Conjugate Roots) ରହିଛି।');
+              steps.push('ପଦକ୍ଷେପ ୪ (ଜଟିଳ ସୂତ୍ର): ' + v + ' = (-b ± i√|D|) / (2a) = ' + finalAns);
+            } else if (isHindi) {
+              steps.push('चरण 1 (मानक रूप): ' + std);
+              steps.push('चरण 2 (विविक्तकर): D = ' + D + ' < 0');
+              steps.push('चरण 3 (मूलों की प्रकृति): कोई वास्तविक मूल नहीं है, दो काल्पनिक/सम्मिश्र संयुग्मी मूल (Complex Conjugate Roots) हैं।');
+              steps.push('चरण 4 (सम्मिश्र सूत्र): ' + v + ' = (-b ± i√|D|) / (2a) = ' + finalAns);
+            } else {
+              steps.push('Step 1 (Standard Form): ' + std);
+              steps.push('Step 2 (Discriminant): D = ' + D + ' < 0');
+              steps.push('Step 3 (Nature of Roots): No real roots; two complex conjugate roots.');
+              steps.push('Step 4 (Complex Formula): ' + v + ' = (-b ± i√|D|) / (2a) = ' + finalAns);
+            }
+          }
+
+          res.innerHTML = '<strong>' + (isOdia ? 'ସମାଧାନ ଉତ୍ତର: ' : (isHindi ? 'अंतिम हल: ' : 'Final Answer: ')) + finalAns + '</strong><br><br>' +
+            steps.map(function(s) { return '<div class="step-item">' + s.replace(/\\n/g, '<br>&nbsp;&nbsp;') + '</div>'; }).join('');
+          return;
+        } else if (poly.b !== 0) {
+          var linRoot = -poly.c / poly.b;
+          var linRootStr = toFrac(linRoot);
+          var linAns = v + ' = ' + linRootStr;
+          var linSteps = [
+            'Standard Linear Form: ' + poly.b + v + (poly.c >= 0 ? ' + ' + poly.c : ' - ' + Math.abs(poly.c)) + ' = 0',
+            'Transpose constant: ' + poly.b + v + ' = ' + (-poly.c),
+            'Divide by coefficient of ' + v + ': ' + v + ' = ' + (-poly.c) + ' / ' + poly.b,
+            'Final Root: ' + linAns
+          ];
+          res.innerHTML = '<strong>' + (isOdia ? 'ସମାଧାନ ଉତ୍ତର: ' : (isHindi ? 'अंतिम हल: ' : 'Final Answer: ')) + linAns + '</strong><br><br>' +
+            linSteps.map(function(s) { return '<div class="step-item">' + s + '</div>'; }).join('');
+          return;
         }
       }
 
-      res.innerHTML = '<strong>Final Answer:</strong> ' + ans + '<br><br>' +
-        steps.map(function(s, i) { return '<div class="step-item">Step ' + (i+1) + ': ' + s + '</div>'; }).join('');
+      // Arithmetic & Fraction fallback
+      try {
+        var sanitized = p.replace(/sin/g, 'Math.sin')
+                         .replace(/cos/g, 'Math.cos')
+                         .replace(/tan/g, 'Math.tan')
+                         .replace(/sqrt/g, 'Math.sqrt')
+                         .replace(/\\^/g, '**');
+        var evaluated = Function('"use strict"; return (' + sanitized + ')')();
+        var fVal = toFrac(evaluated);
+        var resText = fVal && fVal !== evaluated.toString() ? fVal + ' (' + evaluated + ')' : evaluated.toString();
+        var arithSteps = [
+          'Input parsed: ' + p,
+          'Applied standard PEMDAS / BODMAS operations.',
+          'Calculated result = ' + resText
+        ];
+        res.innerHTML = '<strong>Final Answer:</strong> ' + resText + '<br><br>' +
+          arithSteps.map(function(s, i) { return '<div class="step-item">Step ' + (i+1) + ': ' + s + '</div>'; }).join('');
+      } catch(e) {
+        res.innerHTML = '<strong>Expression:</strong> ' + p + '<br><br><div class="step-item">Unable to evaluate directly offline. Please check formatting.</div>';
+      }
     }
 
     function plotGraph() {

@@ -1,6 +1,8 @@
 import json
 import os
 import re
+import math
+from fractions import Fraction
 import urllib.request
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -170,6 +172,251 @@ def ask_academic_question(question: str, language: str = "English") -> str:
 
     return answer
 
+def to_fraction_str_py(val: float) -> str:
+    if abs(val - round(val)) < 1e-6:
+        return str(round(val))
+    try:
+        f = Fraction(val).limit_denominator(200)
+        return str(f)
+    except Exception:
+        return f"{val:.4f}".rstrip("0").rstrip(".")
+
+
+def parse_poly_side_py(side_str: str, v: str) -> Tuple[float, float, float]:
+    a, b, c = 0.0, 0.0, 0.0
+    s = side_str.strip().replace("²", "^2").replace("×", "*").replace(" ", "")
+    s = re.sub(rf"([{v}])2(?!\d)", r"\1^2", s, flags=re.I)
+    if not s:
+        return a, b, c
+
+    m_fact = re.match(
+        r"^(?:([+-]?\d*\.?\d*)\*?)?\(([+-]?\d*\.?\d*)([a-zA-Z])([+-]\d+\.?\d*)\)\*?\(([+-]?\d*\.?\d*)\3([+-]\d+\.?\d*)\)$",
+        s,
+    )
+    if m_fact:
+        k_str = m_fact.group(1)
+        k = -1.0 if k_str == "-" else (float(k_str) if k_str else 1.0)
+        a1_str = m_fact.group(2)
+        a1 = 1.0 if a1_str in ["", "+"] else (-1.0 if a1_str == "-" else float(a1_str))
+        b1 = float(m_fact.group(4))
+        a2_str = m_fact.group(5)
+        a2 = 1.0 if a2_str in ["", "+"] else (-1.0 if a2_str == "-" else float(a2_str))
+        b2 = float(m_fact.group(6))
+        return k * a1 * a2, k * (a1 * b2 + a2 * b1), k * b1 * b2
+
+    m_sq = re.match(
+        r"^(?:([+-]?\d*\.?\d*)\*?)?\(([+-]?\d*\.?\d*)([a-zA-Z])([+-]\d+\.?\d*)\)\^2$",
+        s,
+    )
+    if m_sq:
+        k_str = m_sq.group(1)
+        k = -1.0 if k_str == "-" else (float(k_str) if k_str else 1.0)
+        a1_str = m_sq.group(2)
+        a1 = 1.0 if a1_str in ["", "+"] else (-1.0 if a1_str == "-" else float(a1_str))
+        b1 = float(m_sq.group(4))
+        return k * a1 * a1, k * 2 * a1 * b1, k * b1 * b1
+
+    m_mono = re.match(
+        r"^(?:([+-]?\d*\.?\d*)\*?)?([a-zA-Z])\*?\(([+-]?\d*\.?\d*)\2([+-]\d+\.?\d*)\)$",
+        s,
+    )
+    if m_mono:
+        k_str = m_mono.group(1)
+        k = -1.0 if k_str == "-" else (float(k_str) if k_str else 1.0)
+        a1_str = m_mono.group(3)
+        a1 = 1.0 if a1_str in ["", "+"] else (-1.0 if a1_str == "-" else float(a1_str))
+        b1 = float(m_mono.group(4))
+        return k * a1, k * b1, 0.0
+
+    terms = re.findall(r"([+-]?[^+-]+)", s)
+    for t in terms:
+        t = t.strip()
+        if not t:
+            continue
+        m2 = re.match(rf"^([+-]?\d*\.?\d*)\*?{v}(?:\^2|\*{v})$", t, flags=re.I)
+        if m2:
+            c_str = m2.group(1)
+            coeff = 1.0 if c_str in ["", "+"] else (-1.0 if c_str == "-" else float(c_str))
+            a += coeff
+            continue
+        m1 = re.match(rf"^([+-]?\d*\.?\d*)\*?{v}$", t, flags=re.I)
+        if m1:
+            c_str = m1.group(1)
+            coeff = 1.0 if c_str in ["", "+"] else (-1.0 if c_str == "-" else float(c_str))
+            b += coeff
+            continue
+        try:
+            c += float(t)
+        except ValueError:
+            pass
+
+    return a, b, c
+
+
+def solve_deterministic_math_py(problem: str, language: str = "English") -> Optional[Dict[str, Any]]:
+    clean = re.sub(r"^[^:]*:\s*", "", problem)
+    clean = re.sub(r"solve(?:\s+for\s+[a-zA-Z])?", "", clean, flags=re.I)
+    clean = re.sub(r"find\s+roots?\s+of", "", clean, flags=re.I)
+    clean = re.sub(r"roots?\s+of", "", clean, flags=re.I)
+    clean = re.sub(r"equation[:\s]*", "", clean, flags=re.I).strip()
+
+    v_match = re.search(r"\b([xXyYzZtTnN])\b", clean) or re.search(r"([xXyYzZtTnN])", clean)
+    if not v_match:
+        return None
+    v = v_match.group(1).lower()
+
+    lhs_str = clean
+    rhs_str = "0"
+    if "=" in clean:
+        parts = clean.split("=")
+        lhs_str = parts[0]
+        rhs_str = "=".join(parts[1:])
+
+    a_l, b_l, c_l = parse_poly_side_py(lhs_str, v)
+    a_r, b_r, c_r = parse_poly_side_py(rhs_str, v)
+
+    a = round(a_l - a_r, 6)
+    b = round(b_l - b_r, 6)
+    c = round(c_l - c_r, 6)
+
+    if a == 0 and b == 0 and c == 0:
+        return None
+
+    is_odia = language.lower() in ["odia", "or", "or-in"]
+    is_hindi = language.lower() in ["hindi", "hi", "hi-in"]
+
+    if a != 0:
+        D = round(b * b - 4 * a * c, 6)
+        two_a = 2 * a
+        neg_b = -b
+
+        a_disp = "" if a == 1 else ("-" if a == -1 else str(int(a) if a.is_integer() else a))
+        b_disp = ""
+        if b != 0:
+            sign = " + " if b > 0 else " - "
+            b_val = abs(b)
+            coeff_b = "" if b_val == 1 else (str(int(b_val) if b_val.is_integer() else b_val))
+            b_disp = f"{sign}{coeff_b}{v}"
+        c_disp = ""
+        if c != 0:
+            sign = " + " if c > 0 else " - "
+            c_val = abs(c)
+            c_disp = f"{sign}{int(c_val) if c_val.is_integer() else c_val}"
+        std_form = f"{a_disp}{v}²{b_disp}{c_disp} = 0"
+
+        if D > 0:
+            sqrt_d = math.sqrt(D)
+            is_sq = abs(sqrt_d - round(sqrt_d)) < 1e-6
+            r1 = (-b + sqrt_d) / two_a
+            r2 = (-b - sqrt_d) / two_a
+            r1_str = to_fraction_str_py(r1)
+            r2_str = to_fraction_str_py(r2)
+            res_str = f"{v}₁ = {r1_str}, {v}₂ = {r2_str}"
+            sqrt_disp = str(round(sqrt_d)) if is_sq else f"{sqrt_d:.4f}"
+
+            if is_odia:
+                steps = [
+                    f"ପଦକ୍ଷେପ ୧ (ମାନକ ରୂପ): ଦ୍ୱିଘାତ ସମୀକରଣ ax² + bx + c = 0:\n   {std_form}",
+                    f"ପଦକ୍ଷେପ ୨ (ସହଗ ଚିହ୍ନଟ): a = {a}, b = {b}, c = {c}",
+                    f"ପଦକ୍ଷେପ ୩ (ପ୍ରଭେଦକ D ନିରୂପଣ): D = b² - 4ac = ({b})² - 4({a})({c}) = {D}",
+                    f"ପଦକ୍ଷେପ ୪ (ବୀଜର ପ୍ରକୃତି): ଯେହେତୁ D = {D} > 0, ଏହି ସମୀକରଣର ଦୁଇଟି ବାସ୍ତବ ଓ ଅସମାନ ମୂଳ ରହିଛି।",
+                    f"ପଦକ୍ଷେପ ୫ (ଦ୍ୱିଘାତ ସୂତ୍ର ପ୍ରୟୋଗ): {v} = (-b ± √D) / (2a) = ({neg_b} ± {sqrt_disp}) / {two_a}",
+                    f"ପଦକ୍ଷେପ ୬ (ଅନ୍ତିମ ମୂଳ): {res_str}",
+                ]
+            elif is_hindi:
+                steps = [
+                    f"चरण 1 (मानक रूप): मानक द्विघात समीकरण ax² + bx + c = 0:\n   {std_form}",
+                    f"चरण 2 (गुणांक पहचान): a = {a}, b = {b}, c = {c}",
+                    f"चरण 3 (विविक्तकर D की गणना): D = b² - 4ac = ({b})² - 4({a})({c}) = {D}",
+                    f"चरण 4 (मूलों की प्रकृति): चूँकि D = {D} > 0, समीकरण के दो भिन्न वास्तविक मूल हैं।",
+                    f"चरण 5 (द्विघाती सूत्र): {v} = (-b ± √D) / (2a) = ({neg_b} ± {sqrt_disp}) / {two_a}",
+                    f"चरण 6 (अंतिम मूल): {res_str}",
+                ]
+            else:
+                steps = [
+                    f"Step 1 (Standard Form): Standard quadratic form ax² + bx + c = 0:\n   {std_form}",
+                    f"Step 2 (Coefficients): a = {a}, b = {b}, c = {c}",
+                    f"Step 3 (Discriminant D): D = b² - 4ac = ({b})² - 4({a})({c}) = {D}",
+                    f"Step 4 (Nature of Roots): Since D = {D} > 0, the equation has two distinct real roots.",
+                    f"Step 5 (Quadratic Formula): {v} = (-b ± √D) / (2a) = ({neg_b} ± {sqrt_disp}) / {two_a}",
+                    f"Step 6 (Final Roots): {res_str}",
+                ]
+            return {"problem": problem, "result": res_str, "steps": steps}
+
+        elif D == 0:
+            r = -b / two_a
+            r_str = to_fraction_str_py(r)
+            res_str = f"{v} = {r_str} (Double Root)"
+            if is_odia:
+                steps = [
+                    f"ପଦକ୍ଷେପ ୧ (ମାନକ ରୂପ): {std_form}",
+                    f"ପଦକ୍ଷେପ ୨ (ପ୍ରଭେଦକ): D = 0",
+                    f"ପଦକ୍ଷେପ ୩ (ବୀଜର ପ୍ରକୃତି): ଦୁଇଟି ସମାନ ବାସ୍ତବ ମୂଳ (Equal Real Roots)",
+                    f"ପଦକ୍ଷେପ ୪ (ମୂଳ ନିର୍ଣ୍ଣୟ): {v} = -b / (2a) = {r_str}",
+                ]
+            elif is_hindi:
+                steps = [
+                    f"चरण 1 (मानक रूप): {std_form}",
+                    f"चरण 2 (विविक्तकर): D = 0",
+                    f"चरण 3 (मूलों की प्रकृति): दो बराबर वास्तविक मूल (Equal Real Roots)",
+                    f"चरण 4 (मूल गणना): {v} = -b / (2a) = {r_str}",
+                ]
+            else:
+                steps = [
+                    f"Step 1 (Standard Form): {std_form}",
+                    f"Step 2 (Discriminant): D = 0",
+                    f"Step 3 (Nature of Roots): Two equal real roots (double root)",
+                    f"Step 4 (Calculate Root): {v} = -b / (2a) = {r_str}",
+                ]
+            return {"problem": problem, "result": res_str, "steps": steps}
+
+        else:
+            real_p = -b / two_a
+            imag_p = math.sqrt(-D) / abs(two_a)
+            r_str = to_fraction_str_py(real_p)
+            i_str = to_fraction_str_py(imag_p)
+            i_sym = "i" if i_str == "1" else f"{i_str}i"
+            c1 = i_sym if real_p == 0 else f"{r_str} + {i_sym}"
+            c2 = f"-{i_sym}" if real_p == 0 else f"{r_str} - {i_sym}"
+            res_str = f"{v}₁ = {c1}, {v}₂ = {c2}"
+            if is_odia:
+                steps = [
+                    f"ପଦକ୍ଷେପ ୧ (ମାନକ ରୂପ): {std_form}",
+                    f"ପଦକ୍ଷେପ ୨ (ପ୍ରଭେଦକ): D = {D} < 0",
+                    f"ପଦକ୍ଷେପ ୩ (ବୀଜର ପ୍ରକୃତି): କୌଣସି ବାସ୍ତବ ମୂଳ ନାହିଁ, ଦୁଇଟି ଜଟିଳ ଅନୁବନ୍ଧୀ ମୂଳ (Complex Conjugate Roots) ଅଛି।",
+                    f"ପଦକ୍ଷେପ ୪ (ଜଟିଳ ସୂତ୍ର): {v} = (-b ± i√|D|) / (2a) = {res_str}",
+                ]
+            elif is_hindi:
+                steps = [
+                    f"चरण 1 (मानक रूप): {std_form}",
+                    f"चरण 2 (विविक्तकर): D = {D} < 0",
+                    f"चरण 3 (मूलों की प्रकृति): कोई वास्तविक मूल नहीं है, दो काल्पनिक/सम्मिश्र संयुग्मी मूल हैं।",
+                    f"चरण 4 (सम्मिश्र सूत्र): {v} = (-b ± i√|D|) / (2a) = {res_str}",
+                ]
+            else:
+                steps = [
+                    f"Step 1 (Standard Form): {std_form}",
+                    f"Step 2 (Discriminant): D = {D} < 0",
+                    f"Step 3 (Nature of Roots): No real roots; two complex conjugate roots.",
+                    f"Step 4 (Complex Formula): {v} = (-b ± i√|D|) / (2a) = {res_str}",
+                ]
+            return {"problem": problem, "result": res_str, "steps": steps}
+
+    elif b != 0:
+        root = -c / b
+        root_str = to_fraction_str_py(root)
+        res_str = f"{v} = {root_str}"
+        steps = [
+            f"Step 1 (Linear Form): {b}{v} {'+ ' + str(c) if c >= 0 else '- ' + str(abs(c))} = 0",
+            f"Step 2 (Isolate Term): {b}{v} = {-c}",
+            f"Step 3 (Divide): {v} = {-c} / {b}",
+            f"Step 4 (Final Root): {res_str}",
+        ]
+        return {"problem": problem, "result": res_str, "steps": steps}
+
+    return None
+
+
 def solve_academic_math(problem: str, language: str = "English") -> Dict[str, Any]:
     lang = (language or "English").strip()
     is_odia = lang.lower() in ["odia", "or", "or-in"]
@@ -201,6 +448,11 @@ def solve_academic_math(problem: str, language: str = "English") -> Dict[str, An
 
     raw_resp = call_openrouter(messages, max_tokens=400)
     if not raw_resp:
+        # Check deterministic solver first
+        det_sol = solve_deterministic_math_py(problem, language)
+        if det_sol:
+            return det_sol
+
         if is_odia:
             return {
                 "problem": problem,

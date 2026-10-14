@@ -282,14 +282,447 @@ export function deleteOfflineItem(id: number): void {
   }
 }
 
+function gcd(a: number, b: number): number {
+  a = Math.abs(Math.round(a));
+  b = Math.abs(Math.round(b));
+  while (b) {
+    const t = b;
+    b = a % b;
+    a = t;
+  }
+  return a || 1;
+}
+
+export function toFraction(val: number, maxDenom = 200): string {
+  if (Math.abs(val - Math.round(val)) < 1e-6) return Math.round(val).toString();
+  const sign = val < 0 ? '-' : '';
+  const pos = Math.abs(val);
+  for (let d = 2; d <= maxDenom; d++) {
+    const n = Math.round(pos * d);
+    if (Math.abs(pos - n / d) < 1e-5) {
+      const g = gcd(n, d);
+      const num = n / g;
+      const den = d / g;
+      return den === 1 ? `${sign}${num}` : `${sign}${num}/${den}`;
+    }
+  }
+  return val.toFixed(4).replace(/\.?0+$/, '');
+}
+
+export function formatStandardQuadratic(a: number, b: number, c: number, v = 'x'): string {
+  let res = '';
+  if (a === 1) res += `${v}²`;
+  else if (a === -1) res += `-${v}²`;
+  else res += `${a}${v}²`;
+
+  if (b !== 0) {
+    if (b > 0) res += ` + ${b === 1 ? '' : b}${v}`;
+    else res += ` - ${Math.abs(b) === 1 ? '' : Math.abs(b)}${v}`;
+  }
+
+  if (c !== 0) {
+    if (c > 0) res += ` + ${c}`;
+    else res += ` - ${Math.abs(c)}`;
+  }
+
+  res += ' = 0';
+  return res;
+}
+
+function parsePolySide(sideStr: string, v: string): { a: number; b: number; c: number } {
+  let a = 0;
+  let b = 0;
+  let c = 0;
+  const s = sideStr
+    .trim()
+    .replace(/²/g, '^2')
+    .replace(new RegExp(`([${v}])2(?!\\d)`, 'gi'), '$1^2')
+    .replace(/×/g, '*')
+    .replace(/\s+/g, '');
+
+  if (!s) return { a, b, c };
+
+  // Factored form: k(a1*x + b1)(a2*x + b2)
+  const factoredMatch = s.match(
+    /^(?:([+-]?\d*\.?\d*)\*?)?\(([+-]?\d*\.?\d*)([a-zA-Z])([+-]\d+\.?\d*)\)\*?\(([+-]?\d*\.?\d*)\3([+-]\d+\.?\d*)\)$/
+  );
+  if (factoredMatch) {
+    const k = factoredMatch[1] ? (factoredMatch[1] === '-' ? -1 : parseFloat(factoredMatch[1])) : 1;
+    const a1 =
+      factoredMatch[2] === '' || factoredMatch[2] === '+'
+        ? 1
+        : factoredMatch[2] === '-'
+        ? -1
+        : parseFloat(factoredMatch[2]);
+    const b1 = parseFloat(factoredMatch[4]);
+    const a2 =
+      factoredMatch[5] === '' || factoredMatch[5] === '+'
+        ? 1
+        : factoredMatch[5] === '-'
+        ? -1
+        : parseFloat(factoredMatch[5]);
+    const b2 = parseFloat(factoredMatch[6]);
+    return {
+      a: k * (a1 * a2),
+      b: k * (a1 * b2 + a2 * b1),
+      c: k * (b1 * b2),
+    };
+  }
+
+  // Squared form: k(a1*x + b1)^2
+  const squareMatch = s.match(
+    /^(?:([+-]?\d*\.?\d*)\*?)?\(([+-]?\d*\.?\d*)([a-zA-Z])([+-]\d+\.?\d*)\)\^2$/
+  );
+  if (squareMatch) {
+    const k = squareMatch[1] ? (squareMatch[1] === '-' ? -1 : parseFloat(squareMatch[1])) : 1;
+    const a1 =
+      squareMatch[2] === '' || squareMatch[2] === '+'
+        ? 1
+        : squareMatch[2] === '-'
+        ? -1
+        : parseFloat(squareMatch[2]);
+    const b1 = parseFloat(squareMatch[4]);
+    return {
+      a: k * (a1 * a1),
+      b: k * (2 * a1 * b1),
+      c: k * (b1 * b1),
+    };
+  }
+
+  // Monomial factor: k*x*(a1*x + b1)
+  const monoMatch = s.match(
+    /^(?:([+-]?\d*\.?\d*)\*?)?([a-zA-Z])\*?\(([+-]?\d*\.?\d*)\2([+-]\d+\.?\d*)\)$/
+  );
+  if (monoMatch) {
+    const k = monoMatch[1] ? (monoMatch[1] === '-' ? -1 : parseFloat(monoMatch[1])) : 1;
+    const a1 =
+      monoMatch[3] === '' || monoMatch[3] === '+'
+        ? 1
+        : monoMatch[3] === '-'
+        ? -1
+        : parseFloat(monoMatch[3]);
+    const b1 = parseFloat(monoMatch[4]);
+    return {
+      a: k * a1,
+      b: k * b1,
+      c: 0,
+    };
+  }
+
+  // General signed terms: ([+-]?[^+-]+)
+  const termRegex = /([+-]?[^+-]+)/g;
+  const terms = s.match(termRegex);
+  if (!terms) return { a, b, c };
+
+  for (const t of terms) {
+    if (!t) continue;
+    // Degree 2: x^2 or x*x
+    const deg2Regex = new RegExp(`^([+-]?\\d*\\.?\\d*)\\*?${v}(?:\\^2|\\*${v})$`, 'i');
+    const m2 = t.match(deg2Regex);
+    if (m2) {
+      const coeffStr = m2[1];
+      const coeff = coeffStr === '' || coeffStr === '+' ? 1 : coeffStr === '-' ? -1 : parseFloat(coeffStr);
+      if (!isNaN(coeff)) a += coeff;
+      continue;
+    }
+
+    // Degree 1: x
+    const deg1Regex = new RegExp(`^([+-]?\\d*\\.?\\d*)\\*?${v}$`, 'i');
+    const m1 = t.match(deg1Regex);
+    if (m1) {
+      const coeffStr = m1[1];
+      const coeff = coeffStr === '' || coeffStr === '+' ? 1 : coeffStr === '-' ? -1 : parseFloat(coeffStr);
+      if (!isNaN(coeff)) b += coeff;
+      continue;
+    }
+
+    // Degree 0 (constant)
+    const cVal = parseFloat(t);
+    if (!isNaN(cVal)) {
+      c += cVal;
+    }
+  }
+
+  return { a, b, c };
+}
+
+export function parseEquationPolynomial(input: string): { a: number; b: number; c: number; v: string } | null {
+  const clean = input
+    .replace(/^[^:]*:\s*/, '')
+    .replace(/solve(?:\s+for\s+[a-zA-Z])?/gi, '')
+    .replace(/find\s+roots?\s+of/gi, '')
+    .replace(/roots?\s+of/gi, '')
+    .replace(/equation[:\s]*/gi, '')
+    .replace(/²/g, '^2')
+    .trim();
+
+  // Find candidate variable letter
+  let v = 'x';
+  const vMatch = clean.match(/\b([xXyYzZtTnN])\b/) || clean.match(/([xXyYzZtTnN])/);
+  if (vMatch) {
+    v = vMatch[1].toLowerCase();
+  } else {
+    // If no explicit variable letter found, this is not an algebraic equation
+    return null;
+  }
+
+  let lhsStr = clean;
+  let rhsStr = '0';
+  if (clean.includes('=')) {
+    const parts = clean.split('=');
+    lhsStr = parts[0];
+    rhsStr = parts.slice(1).join('=');
+  }
+
+  const left = parsePolySide(lhsStr, v);
+  const right = parsePolySide(rhsStr, v);
+
+  const a = Math.round((left.a - right.a) * 1e6) / 1e6;
+  const b = Math.round((left.b - right.b) * 1e6) / 1e6;
+  const c = Math.round((left.c - right.c) * 1e6) / 1e6;
+
+  // Ensure it actually had polynomial terms with variable v
+  if (a === 0 && b === 0 && c === 0) {
+    return null;
+  }
+
+  return { a, b, c, v };
+}
+
+export function solveQuadraticOffline(
+  problem: string,
+  a: number,
+  b: number,
+  c: number,
+  v: string,
+  language: string = 'English'
+): { problem: string; result: string; steps: string[] } {
+  const isOdia = ['odia', 'or', 'or-in'].includes(language.toLowerCase());
+  const isHindi = ['hindi', 'hi', 'hi-in'].includes(language.toLowerCase());
+
+  const stdForm = formatStandardQuadratic(a, b, c, v);
+  const D = Math.round((b * b - 4 * a * c) * 1e6) / 1e6;
+  const twoA = 2 * a;
+  const negB = -b;
+
+  // Parabola Vertex (h, k)
+  const xv = Math.round((-b / twoA) * 1e4) / 1e4;
+  const yv = Math.round((-D / (4 * a)) * 1e4) / 1e4;
+
+  let resultStr = '';
+  let steps: string[] = [];
+
+  if (D > 0) {
+    const sqrtD = Math.sqrt(D);
+    const isSquare = Math.abs(sqrtD - Math.round(sqrtD)) < 1e-6;
+    const r1 = (-b + sqrtD) / twoA;
+    const r2 = (-b - sqrtD) / twoA;
+    const r1Str = toFraction(r1);
+    const r2Str = toFraction(r2);
+
+    resultStr = `${v}₁ = ${r1Str}, ${v}₂ = ${r2Str}`;
+
+    let factoredStr = '';
+    if (isSquare) {
+      const f1 = r1 >= 0 ? `(${v} - ${r1Str})` : `(${v} + ${toFraction(Math.abs(r1))})`;
+      const f2 = r2 >= 0 ? `(${v} - ${r2Str})` : `(${v} + ${toFraction(Math.abs(r2))})`;
+      factoredStr = a === 1 ? `${f1}${f2} = 0` : `${a}${f1}${f2} = 0`;
+    }
+
+    if (isOdia) {
+      steps = [
+        `ପଦକ୍ଷେପ ୧ (ମାନକ ରୂପ): ଦିଆଯାଇଥିବା ସମୀକରଣକୁ ଦ୍ୱିଘାତ ସମୀକରଣର ମାନକ ରୂପ ax² + bx + c = 0 ରେ ପ୍ରକାଶ କରାଗଲା:\n   ${stdForm}`,
+        `ପଦକ୍ଷେପ ୨ (ସହଗ ଚିହ୍ନଟ): ସହଗଗୁଡ଼ିକ ଚିହ୍ନଟ କରାଗଲା:\n   • a = ${a}\n   • b = ${b}\n   • c = ${c}`,
+        `ପଦକ୍ଷେପ ୩ (ପ୍ରଭେଦକ / Discriminant ନିରୂପଣ): D = b² - 4ac ସୂତ୍ର ପ୍ରୟୋଗ କରିବା:\n   D = (${b})² - 4(${a})(${c}) = ${b * b} - (${4 * a * c}) = ${D}`,
+        `ପଦକ୍ଷେପ ୪ (ବୀଜର ପ୍ରକୃତି): ଯେହେତୁ D = ${D} > 0, ଏହି ସମୀକରଣର ଦୁଇଟି ବାସ୍ତବ ଓ ଅସମାନ ମୂଳ (Two Distinct Real Roots) ରହିଛି${
+          isSquare ? ' ଏବଂ ଏଗୁଡ଼ିକ ପରିମେୟ (Rational) ଅଟନ୍ତି।' : ' ଏବଂ ଏଗୁଡ଼ିକ ଅପରିମେୟ (Irrational) ଅଟନ୍ତି।'
+        }`,
+        `ପଦକ୍ଷେପ ୫ (ଶ୍ରୀଧର ଆଚାର୍ଯ୍ୟ ସୂତ୍ର ପ୍ରୟୋଗ): ${v} = (-b ± √D) / (2a)\n   ${v} = (-(${b}) ± √${D}) / (2 × ${a})\n   ${v} = (${negB} ± ${
+          isSquare ? Math.round(sqrtD) : sqrtD.toFixed(4)
+        }) / ${twoA}\n   • ପ୍ରଥମ ମୂଳ: ${v}₁ = (${negB} + ${isSquare ? Math.round(sqrtD) : sqrtD.toFixed(4)}) / ${twoA} = ${r1Str}\n   • ଦ୍ୱିତୀୟ ମୂଳ: ${v}₂ = (${negB} - ${
+          isSquare ? Math.round(sqrtD) : sqrtD.toFixed(4)
+        }) / ${twoA} = ${r2Str}`,
+        factoredStr
+          ? `ପଦକ୍ଷେପ ୬ (ଗୁଣନଖଣ୍ଡ ରୂପ ଓ ପାରାବୋଲା ଶୀର୍ଷ): ଗୁଣନଖଣ୍ଡ: ${factoredStr}\n   ପାରାବୋଲାର ଶୀର୍ଷବିନ୍ଦୁ (Vertex): (${xv}, ${yv}), ସମମିତି ଅକ୍ଷ: ${v} = ${xv}`
+          : `ପଦକ୍ଷେପ ୬ (ପାରାବୋଲା ଶୀର୍ଷବିନ୍ଦୁ): Vertex = (${xv}, ${yv}), ସମମିତି ଅକ୍ଷ: ${v} = ${xv}`,
+      ];
+    } else if (isHindi) {
+      steps = [
+        `चरण 1 (मानक रूप में परिवर्तन): समीकरण को मानक द्विघात रूप ax² + bx + c = 0 में व्यवस्थित किया गया:\n   ${stdForm}`,
+        `चरण 2 (गुणांकों की पहचान): गुणांक:\n   • a = ${a}\n   • b = ${b}\n   • c = ${c}`,
+        `चरण 3 (विविक्तकर D की गणना): D = b² - 4ac सूत्र द्वारा:\n   D = (${b})² - 4(${a})(${c}) = ${b * b} - (${4 * a * c}) = ${D}`,
+        `चरण 4 (मूलों की प्रकृति): चूँकि D = ${D} > 0, समीकरण के दो भिन्न वास्तविक मूल (Two Distinct Real Roots) हैं${
+          isSquare ? ' तथा ये परिमेय (Rational) हैं।' : ' तथा ये अपरिमेय (Irrational) हैं।'
+        }`,
+        `चरण 5 (श्रीधराचार्य द्विघाती सूत्र): ${v} = (-b ± √D) / (2a)\n   ${v} = (-(${b}) ± √${D}) / (2 × ${a})\n   ${v} = (${negB} ± ${
+          isSquare ? Math.round(sqrtD) : sqrtD.toFixed(4)
+        }) / ${twoA}\n   • पहला मूल: ${v}₁ = (${negB} + ${isSquare ? Math.round(sqrtD) : sqrtD.toFixed(4)}) / ${twoA} = ${r1Str}\n   • दूसरा मूल: ${v}₂ = (${negB} - ${
+          isSquare ? Math.round(sqrtD) : sqrtD.toFixed(4)
+        }) / ${twoA} = ${r2Str}`,
+        factoredStr
+          ? `चरण 6 (गुणनखंड एवं शीर्ष): गुणनखंड रूप: ${factoredStr}\n   परवलय का शीर्ष (Vertex): (${xv}, ${yv}), सममिति अक्ष: ${v} = ${xv}`
+          : `चरण 6 (परवलय शीर्ष): Vertex = (${xv}, ${yv}), सममिति अक्ष: ${v} = ${xv}`,
+      ];
+    } else {
+      steps = [
+        `Step 1 (Standard Quadratic Form): Arrange the equation into standard form ax² + bx + c = 0:\n   ${stdForm}`,
+        `Step 2 (Identify Coefficients): From standard form, identify:\n   • a = ${a}\n   • b = ${b}\n   • c = ${c}`,
+        `Step 3 (Calculate Discriminant D): Using discriminant formula D = b² - 4ac:\n   D = (${b})² - 4(${a})(${c}) = ${b * b} - (${4 * a * c}) = ${D}`,
+        `Step 4 (Nature of Roots): Since D = ${D} > 0, the equation has two distinct real roots${
+          isSquare ? ' (Rational roots).' : ' (Irrational roots).'
+        }`,
+        `Step 5 (Quadratic Formula): Apply ${v} = (-b ± √D) / (2a):\n   ${v} = (-(${b}) ± √${D}) / (2 × ${a})\n   ${v} = (${negB} ± ${
+          isSquare ? Math.round(sqrtD) : sqrtD.toFixed(4)
+        }) / ${twoA}\n   • Root 1: ${v}₁ = (${negB} + ${isSquare ? Math.round(sqrtD) : sqrtD.toFixed(4)}) / ${twoA} = ${r1Str}\n   • Root 2: ${v}₂ = (${negB} - ${
+          isSquare ? Math.round(sqrtD) : sqrtD.toFixed(4)
+        }) / ${twoA} = ${r2Str}`,
+        factoredStr
+          ? `Step 6 (Factored Form & Graph): Factored form: ${factoredStr}\n   Parabola vertex: (${xv}, ${yv}), axis of symmetry: ${v} = ${xv}`
+          : `Step 6 (Parabola Properties): Vertex: (${xv}, ${yv}), axis of symmetry: ${v} = ${xv}`,
+      ];
+    }
+  } else if (D === 0) {
+    const r = -b / twoA;
+    const rStr = toFraction(r);
+    resultStr = `${v} = ${rStr} (Double Root)`;
+    const f = r >= 0 ? `(${v} - ${rStr})² = 0` : `(${v} + ${toFraction(Math.abs(r))})² = 0`;
+
+    if (isOdia) {
+      steps = [
+        `ପଦକ୍ଷେପ ୧ (ମାନକ ରୂପ): ଦ୍ୱିଘାତ ସମୀକରଣର ମାନକ ରୂପ:\n   ${stdForm}`,
+        `ପଦକ୍ଷେପ ୨ (ସହଗ ଚିହ୍ନଟ): a = ${a}, b = ${b}, c = ${c}`,
+        `ପଦକ୍ଷେପ ୩ (ପ୍ରଭେଦକ D ନିରୂପଣ): D = (${b})² - 4(${a})(${c}) = 0`,
+        `ପଦକ୍ଷେପ ୪ (ବୀଜର ପ୍ରକୃତି): ଯେହେତୁ D = 0, ଏହି ସମୀକରଣର ଦୁଇଟି ସମାନ ବାସ୍ତବ ମୂଳ (Two Equal Real Roots / Double Root) ରହିଛି।`,
+        `ପଦକ୍ଷେପ ୫ (ମୂଳ ନିର୍ଣ୍ଣୟ): ${v} = -b / (2a) = -(${b}) / (2 × ${a}) = ${rStr}`,
+        `ପଦକ୍ଷେପ ୬ (ପୂର୍ଣ୍ଣ ବର୍ଗ ରୂପ): ${f}\n   ପାରାବୋଲାର ଶୀର୍ଷବିନ୍ଦୁ: (${xv}, ${yv})`,
+      ];
+    } else if (isHindi) {
+      steps = [
+        `चरण 1 (मानक रूप): समीकरण का मानक द्विघात रूप:\n   ${stdForm}`,
+        `चरण 2 (गुणांक): a = ${a}, b = ${b}, c = ${c}`,
+        `चरण 3 (विविक्तकर D): D = (${b})² - 4(${a})(${c}) = 0`,
+        `चरण 4 (मूलों की प्रकृति): चूँकि D = 0, समीकरण के दो बराबर वास्तविक मूल (Equal Real Roots / पुनरावृत्त मूल) हैं।`,
+        `चरण 5 (मूल गणना): ${v} = -b / (2a) = -(${b}) / (2 × ${a}) = ${rStr}`,
+        `चरण 6 (पूर्ण वर्ग रूप): ${f}\n   परवलय का शीर्ष: (${xv}, ${yv})`,
+      ];
+    } else {
+      steps = [
+        `Step 1 (Standard Form): Standard quadratic equation form:\n   ${stdForm}`,
+        `Step 2 (Coefficients): a = ${a}, b = ${b}, c = ${c}`,
+        `Step 3 (Discriminant D): D = (${b})² - 4(${a})(${c}) = 0`,
+        `Step 4 (Nature of Roots): Since D = 0, the equation has two equal real roots (double root).`,
+        `Step 5 (Calculate Root): ${v} = -b / (2a) = -(${b}) / (2 × ${a}) = ${rStr}`,
+        `Step 6 (Perfect Square Form): ${f}\n   Parabola vertex: (${xv}, ${yv})`,
+      ];
+    }
+  } else {
+    // D < 0 -> Complex conjugate roots
+    const realPart = -b / twoA;
+    const imagPart = Math.sqrt(-D) / Math.abs(twoA);
+    const realStr = toFraction(realPart);
+    const imagStr = toFraction(imagPart);
+    const iPart = imagStr === '1' ? 'i' : `${imagStr}i`;
+
+    const c1 = realPart === 0 ? iPart : `${realStr} + ${iPart}`;
+    const c2 = realPart === 0 ? `-${iPart}` : `${realStr} - ${iPart}`;
+    resultStr = `${v}₁ = ${c1}, ${v}₂ = ${c2}`;
+
+    if (isOdia) {
+      steps = [
+        `ପଦକ୍ଷେପ ୧ (ମାନକ ରୂପ): ଦ୍ୱିଘାତ ସମୀକରଣ:\n   ${stdForm}`,
+        `ପଦକ୍ଷେପ ୨ (ସହଗ ଚିହ୍ନଟ): a = ${a}, b = ${b}, c = ${c}`,
+        `ପଦକ୍ଷେପ ୩ (ପ୍ରଭେଦକ D ନିରୂପଣ): D = (${b})² - 4(${a})(${c}) = ${D}`,
+        `ପଦକ୍ଷେପ ୪ (ବୀଜର ପ୍ରକୃତି): ଯେହେତୁ D = ${D} < 0, ଏହାର କୌଣସି ବାସ୍ତବ ମୂଳ ନାହିଁ। ଏହାର ଦୁଇଟି କାଳ୍ପନିକ/ଜଟିଳ ଅନୁବନ୍ଧୀ ମୂଳ (Complex Conjugate Roots) ରହିଛି (ଯେଉଁଠାରେ i = √(-1))।`,
+        `ପଦକ୍ଷେପ ୫ (ଜଟିଳ ସୂତ୍ର ପ୍ରୟୋଗ): ${v} = (-b ± i√|D|) / (2a)\n   • ${v}₁ = ${c1}\n   • ${v}₂ = ${c2}`,
+        `ପଦକ୍ଷେପ ୬ (ପାରାବୋଲା ବୈଶିଷ୍ଟ୍ୟ): ପାରାବୋଲା x-ଅକ୍ଷକୁ ଛେଦ କରେ ନାହିଁ। ଶୀର୍ଷବିନ୍ଦୁ (Vertex): (${xv}, ${yv})`,
+      ];
+    } else if (isHindi) {
+      steps = [
+        `चरण 1 (मानक रूप): द्विघात समीकरण:\n   ${stdForm}`,
+        `चरण 2 (गुणांक): a = ${a}, b = ${b}, c = ${c}`,
+        `चरण 3 (विविक्तकर D): D = (${b})² - 4(${a})(${c}) = ${D}`,
+        `चरण 4 (मूलों की प्रकृति): चूँकि D = ${D} < 0, कोई वास्तविक मूल नहीं है। समीकरण के दो काल्पनिक/सम्मिश्र संयुग्मी मूल (Complex Conjugate Roots) हैं (जहाँ i = √(-1))।`,
+        `चरण 5 (सम्मिश्र मूल गणना): ${v} = (-b ± i√|D|) / (2a)\n   • ${v}₁ = ${c1}\n   • ${v}₂ = ${c2}`,
+        `चरण 6 (परवलय विशेषता): परवलय x-अक्ष को प्रतिच्छेद नहीं करता। शीर्ष (Vertex): (${xv}, ${yv})`,
+      ];
+    } else {
+      steps = [
+        `Step 1 (Standard Form): Quadratic equation:\n   ${stdForm}`,
+        `Step 2 (Coefficients): a = ${a}, b = ${b}, c = ${c}`,
+        `Step 3 (Discriminant D): D = (${b})² - 4(${a})(${c}) = ${D}`,
+        `Step 4 (Nature of Roots): Since D = ${D} < 0, there are no real roots. The equation has two complex conjugate roots involving imaginary unit i (where i = √(-1)).`,
+        `Step 5 (Complex Roots Formula): ${v} = (-b ± i√|D|) / (2a)\n   • ${v}₁ = ${c1}\n   • ${v}₂ = ${c2}`,
+        `Step 6 (Parabola Graph): The parabola does not intersect the x-axis. Vertex: (${xv}, ${yv})`,
+      ];
+    }
+  }
+
+  return { problem, result: resultStr, steps };
+}
+
+export function solveLinearOffline(
+  problem: string,
+  b: number,
+  c: number,
+  v: string,
+  language: string = 'English'
+): { problem: string; result: string; steps: string[] } {
+  const isOdia = ['odia', 'or', 'or-in'].includes(language.toLowerCase());
+  const isHindi = ['hindi', 'hi', 'hi-in'].includes(language.toLowerCase());
+
+  const root = -c / b;
+  const rootStr = toFraction(root);
+  const resultStr = `${v} = ${rootStr}`;
+
+  let steps: string[] = [];
+
+  if (isOdia) {
+    steps = [
+      `ପଦକ୍ଷେପ ୧ (ରୈଖିକ ସମୀକରଣ ରୂପ): ସମୀକରଣକୁ bx + c = 0 ରୂପରେ ସଜ୍ଜିତ କରାଗଲା:\n   ${b}${v} ${c >= 0 ? '+ ' + c : '- ' + Math.abs(c)} = 0`,
+      `ପଦକ୍ଷେପ ୨ (ସ୍ଥିରାଙ୍କ ପାର୍ଶ୍ୱ ପରିବର୍ତ୍ତନ): ସ୍ଥିରାଙ୍କ ପଦକୁ ଡାହାଣ ପାର୍ଶ୍ୱକୁ ନିଆଗଲା:\n   ${b}${v} = ${-c}`,
+      `ପଦକ୍ଷେପ ୩ (ସହଗ ଦ୍ୱାରା ଭାଗ): ଉଭୟ ପାର୍ଶ୍ୱକୁ ${v} ର ସହଗ (${b}) ଦ୍ୱାରା ଭାଗ କରାଗଲା:\n   ${v} = ${-c} / ${b}`,
+      `ପଦକ୍ଷେପ ୪ (ଅନ୍ତିମ ସମାଧାନ): ${v} = ${rootStr}`,
+    ];
+  } else if (isHindi) {
+    steps = [
+      `चरण 1 (रैखिक समीकरण रूप): समीकरण को मानक रैखिक रूप bx + c = 0 में व्यवस्थित किया गया:\n   ${b}${v} ${c >= 0 ? '+ ' + c : '- ' + Math.abs(c)} = 0`,
+      `चरण 2 (अचर पद पक्षांतरण): अचर पद को दाईं ओर ले जाने पर:\n   ${b}${v} = ${-c}`,
+      `चरण 3 (गुणांक से भाग): दोनों पक्षों को ${v} के गुणांक (${b}) से भाग देने पर:\n   ${v} = ${-c} / ${b}`,
+      `चरण 4 (अंतिम हल): ${v} = ${rootStr}`,
+    ];
+  } else {
+    steps = [
+      `Step 1 (Linear Equation Form): Arrange into standard linear form bx + c = 0:\n   ${b}${v} ${c >= 0 ? '+ ' + c : '- ' + Math.abs(c)} = 0`,
+      `Step 2 (Isolate Variable Term): Transpose constant term to right-hand side:\n   ${b}${v} = ${-c}`,
+      `Step 3 (Divide by Coefficient): Divide both sides by the coefficient of ${v} (${b}):\n   ${v} = ${-c} / ${b}`,
+      `Step 4 (Final Verified Root): ${v} = ${rootStr}`,
+    ];
+  }
+
+  return { problem, result: resultStr, steps };
+}
+
 export function solveMathOffline(problem: string, language: string = 'English'): { problem: string; result: string; steps: string[] } {
   const isOdia = ['odia', 'or', 'or-in'].includes(language.toLowerCase());
   const isHindi = ['hindi', 'hi', 'hi-in'].includes(language.toLowerCase());
   const clean = problem.trim();
+
+  // 1. Check if the input is an algebraic equation (Quadratic or Linear)
+  const poly = parseEquationPolynomial(clean);
+  if (poly) {
+    if (poly.a !== 0) {
+      return solveQuadraticOffline(clean, poly.a, poly.b, poly.c, poly.v, language);
+    } else if (poly.b !== 0) {
+      return solveLinearOffline(clean, poly.b, poly.c, poly.v, language);
+    }
+  }
+
+  // 2. Deterministic Arithmetic & Fraction Evaluator
   let calculatedResult: string | null = null;
+  let fractionForm: string | null = null;
 
   try {
-    let expr = clean
+    const expr = clean
       .replace(/×/g, '*')
       .replace(/÷/g, '/')
       .replace(/\^/g, '**')
@@ -298,7 +731,9 @@ export function solveMathOffline(problem: string, language: string = 'English'):
     if (/^[0-9+\-*/().\s%*Math.sqrtMath.absMath.PI,]+$/.test(expr) && !/[a-zA-Z]/.test(expr.replace(/Math\.sqrt|Math\.abs|Math\.PI/g, ''))) {
       const val = Function(`'use strict'; return (${expr})`)();
       if (typeof val === 'number' && !isNaN(val) && isFinite(val)) {
-        calculatedResult = Number.isInteger(val) ? val.toString() : val.toFixed(4).replace(/\.?0+$/, '');
+        fractionForm = toFraction(val);
+        const decStr = Number.isInteger(val) ? val.toString() : val.toFixed(4).replace(/\.?0+$/, '');
+        calculatedResult = fractionForm && fractionForm !== decStr ? `${fractionForm} (${decStr})` : decStr;
       }
     }
   } catch {}
