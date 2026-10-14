@@ -17,10 +17,11 @@ import {
 import type { User as UserType } from '../types';
 import { playSuccessChime, playWelcomeSound } from '../utils/soundEffects';
 import { getUserItem, setUserItem } from '../utils/userStorage';
+import { api } from '../api';
 
 export interface QuizQuestion {
   id: string;
-  category: 'Math' | 'Science' | 'Geography' | 'Logic' | 'History' | 'Computer';
+  category: 'Math' | 'Science' | 'Geography' | 'Logic' | 'History' | 'Computer' | string;
   question: string;
   options: string[];
   correctIndex: number;
@@ -465,6 +466,7 @@ export const BattleOfBrainsArena: React.FC<BattleOfBrainsProps> = ({
   // Category filtering & Custom AI generation
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [customTopicInput, setCustomTopicInput] = useState<string>('');
+  const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [isAiGenerating, setIsAiGenerating] = useState<boolean>(false);
   const [roundNotification, setRoundNotification] = useState<string | null>(null);
   const [questionVault, setQuestionVault] = useState<QuizQuestion[]>(ARENA_QUESTIONS_BANK);
@@ -515,12 +517,31 @@ export const BattleOfBrainsArena: React.FC<BattleOfBrainsProps> = ({
   }, [gameState, timeLeft, isAnswerSubmitted]);
 
   // Start new round with 100% brand new questions guarantee
-  const handleStartDuel = (isNextRound: boolean = false, customQuestions?: QuizQuestion[]) => {
-    let selectedSet: QuizQuestion[] = [];
+  const handleStartDuel = (
+    isNextRound: boolean = false,
+    customQuestions?: QuizQuestion[],
+    topicTitle?: string
+  ) => {
+    // If user clicked start duel from lobby and has typed a custom search topic, generate for that topic
+    if (!isNextRound && !customQuestions && customTopicInput.trim()) {
+      handleGenerateAiRound(customTopicInput.trim());
+      return;
+    }
 
-    if (customQuestions && customQuestions.length >= 5) {
+    // If playing next round on an active topic, generate next batch for that topic
+    if (isNextRound && !customQuestions && activeTopic) {
+      handleGenerateAiRound(activeTopic);
+      return;
+    }
+
+    let selectedSet: QuizQuestion[] = [];
+    const currentTopic = topicTitle || activeTopic;
+
+    if (customQuestions && customQuestions.length >= 3) {
       selectedSet = customQuestions.slice(0, 5);
-      setRoundNotification(`✨ Loaded 5 AI-Generated Questions for your duel!`);
+      setRoundNotification(
+        `✨ Round ${isNextRound ? roundNumber + 1 : roundNumber}: 5 Questions Loaded on "${currentTopic || 'Custom Topic'}"!`
+      );
     } else {
       // 1. Filter by category if not 'All'
       let pool = questionVault;
@@ -580,67 +601,52 @@ export const BattleOfBrainsArena: React.FC<BattleOfBrainsProps> = ({
   };
 
   // Generate Custom AI Topic Questions
-  const handleGenerateAiRound = async () => {
-    const topic = customTopicInput.trim() || (selectedCategory !== 'All' ? selectedCategory : 'General Science & History');
+  const handleGenerateAiRound = async (overrideTopic?: string) => {
+    const raw = (overrideTopic !== undefined ? overrideTopic : customTopicInput).trim();
+    const topic = raw || (selectedCategory !== 'All' ? selectedCategory : 'General Science & History');
     setIsAiGenerating(true);
+
     try {
-      const key = import.meta.env.VITE_OPENROUTER_API_KEY || '';
-
-      const lang = selectedLanguage || 'English';
-
-      const systemPrompt = `You are an expert quizmaster. Generate 5 multiple-choice questions for an academic speed quiz on topic: "${topic}".
-Language requested: ${lang}.
-Return strictly a valid JSON array of 5 objects with keys:
-"id" (string), "category" (string e.g. Math, Science, Geography, Logic, History, Computer), "question" (string), "options" (array of exactly 4 strings), "correctIndex" (integer 0-3), "explanation" (string explaining why the answer is correct).
-Do NOT include markdown formatting or extra text. Only raw JSON array.`;
-
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'ATLAS 2.0 Battle of Brains',
-        },
-        body: JSON.stringify({
-          model: 'deepseek/deepseek-chat',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Create 5 questions about: ${topic}` },
-          ],
-          max_tokens: 800,
-          temperature: 0.7,
-        }),
-      });
-
-      const data = await res.json();
-      const raw = data.choices?.[0]?.message?.content || '';
-      const cleaned = raw.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleaned);
-
-      if (Array.isArray(parsed) && parsed.length >= 3) {
-        const formatted: QuizQuestion[] = parsed.slice(0, 5).map((q: any, i: number) => ({
-          id: `ai-${Date.now()}-${i}`,
+      // 1. Primary generation via backend endpoint (/api/ai/generate-quiz)
+      const res = await api.generateTopicQuiz(topic, selectedLanguage, 5);
+      if (res && Array.isArray(res.questions) && res.questions.length >= 3) {
+        const formatted: QuizQuestion[] = res.questions.slice(0, 5).map((q: any, i: number) => ({
+          id: q.id || `topic-${Date.now()}-${i}`,
           category: (q.category || 'Science') as any,
           question: q.question,
           options: Array.isArray(q.options) && q.options.length === 4 ? q.options : ['A', 'B', 'C', 'D'],
-          correctIndex: typeof q.correctIndex === 'number' ? q.correctIndex : 0,
-          explanation: q.explanation || 'Answer verified by AI tutor.',
+          correctIndex: typeof q.correctIndex === 'number' && q.correctIndex >= 0 && q.correctIndex <= 3 ? q.correctIndex : 0,
+          explanation: q.explanation || `Concept verified for ${topic}.`,
         }));
 
+        setActiveTopic(topic);
         setQuestionVault((prev) => [...formatted, ...prev]);
-        handleStartDuel(true, formatted);
-        setCustomTopicInput('');
+        handleStartDuel(true, formatted, topic);
         return;
       }
     } catch (err) {
-      console.warn('[Battle AI Gen] Fallback to vault questions:', err);
+      console.warn('[Battle AI Gen] Primary API failed, checking vault keywords & resilient fallback:', err);
     } finally {
       setIsAiGenerating(false);
     }
 
-    // Fallback if AI fails or times out
-    handleStartDuel(true);
+    // 2. Keyword Search Fallback in question vault
+    const terms = topic.toLowerCase().split(/\s+/).filter(Boolean);
+    const matched = questionVault.filter((q) => {
+      const corpus = `${q.question} ${q.options.join(' ')} ${q.explanation} ${q.category}`.toLowerCase();
+      return terms.some((t) => corpus.includes(t));
+    });
+
+    if (matched.length >= 3) {
+      const selected = matched.slice(0, 5);
+      setActiveTopic(topic);
+      handleStartDuel(true, selected, topic);
+      return;
+    }
+
+    // 3. Fallback: Synthesized questions for topic
+    setActiveTopic(topic);
+    handleStartDuel(true, undefined, topic);
   };
 
   const currentQ = currentRoundQuestions[currentQIndex];
@@ -799,17 +805,30 @@ Do NOT include markdown formatting or extra text. Only raw JSON array.`;
               <input
                 type="text"
                 className="arena-custom-topic-input"
-                placeholder="Or type custom AI topic (e.g. Astrophysics, Indian History, Calculus)..."
+                placeholder="Search or enter quiz topic (e.g. Astrophysics, Indian History, Calculus, Mitochondria)..."
                 value={customTopicInput}
                 onChange={(e) => setCustomTopicInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleGenerateAiRound();
                 }}
               />
+              {customTopicInput && (
+                <button
+                  type="button"
+                  className="arena-clear-topic-btn"
+                  onClick={() => {
+                    setCustomTopicInput('');
+                    setActiveTopic(null);
+                  }}
+                  title="Clear topic"
+                >
+                  ×
+                </button>
+              )}
               <button
                 type="button"
                 className="arena-btn-ai-gen"
-                onClick={handleGenerateAiRound}
+                onClick={() => handleGenerateAiRound()}
                 disabled={isAiGenerating}
               >
                 {isAiGenerating ? (
@@ -820,20 +839,54 @@ Do NOT include markdown formatting or extra text. Only raw JSON array.`;
                 ) : (
                   <>
                     <Zap size={14} />
-                    <span>AI Duel</span>
+                    <span>Load Topic Quiz</span>
                   </>
                 )}
               </button>
             </div>
 
+            {activeTopic && (
+              <div className="arena-active-topic-badge">
+                <Sparkles size={13} color="#7c3aed" />
+                <span>Active Topic: <strong>{activeTopic}</strong></span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTopic(null);
+                    setCustomTopicInput('');
+                  }}
+                  title="Reset to Mixed Subjects"
+                >
+                  (Reset to All)
+                </button>
+              </div>
+            )}
+
             <div style={{ marginTop: '1.25rem' }}>
               <button
                 type="button"
                 className="arena-start-btn"
-                onClick={() => handleStartDuel(false)}
+                onClick={() => {
+                  if (customTopicInput.trim()) {
+                    handleGenerateAiRound(customTopicInput.trim());
+                  } else if (activeTopic) {
+                    handleGenerateAiRound(activeTopic);
+                  } else {
+                    handleStartDuel(false);
+                  }
+                }}
+                disabled={isAiGenerating}
               >
                 <Zap size={18} />
-                <span>Enter 1v1 Bot Duel (Round {roundNumber})</span>
+                <span>
+                  {isAiGenerating
+                    ? 'Loading Questions...'
+                    : customTopicInput.trim()
+                    ? `Duel on "${customTopicInput.trim()}" (Round ${roundNumber})`
+                    : activeTopic
+                    ? `Duel on "${activeTopic}" (Round ${roundNumber})`
+                    : `Enter 1v1 Bot Duel (Round ${roundNumber})`}
+                </span>
               </button>
             </div>
           </div>
@@ -906,7 +959,7 @@ Do NOT include markdown formatting or extra text. Only raw JSON array.`;
 
           {/* Question Card */}
           <div className="arena-question-box">
-            <span className="arena-q-category">{currentQ.category}</span>
+            <span className="arena-q-category">{currentQ.category}{activeTopic ? ` • ${activeTopic}` : ''}</span>
             <h3 className="arena-q-text">{currentQ.question}</h3>
           </div>
 
@@ -1004,10 +1057,23 @@ Do NOT include markdown formatting or extra text. Only raw JSON array.`;
             <button
               type="button"
               className="btn-primary"
-              onClick={() => handleStartDuel(true)}
+              onClick={() => {
+                if (activeTopic) {
+                  handleGenerateAiRound(activeTopic);
+                } else {
+                  handleStartDuel(true);
+                }
+              }}
+              disabled={isAiGenerating}
             >
               <RotateCcw size={16} />
-              <span>Play Next Round (5 New Questions)</span>
+              <span>
+                {isAiGenerating
+                  ? 'Generating Next Round...'
+                  : activeTopic
+                  ? `Play Next Round on "${activeTopic}" (5 New Questions)`
+                  : 'Play Next Round (5 New Questions)'}
+              </span>
             </button>
             <button
               type="button"

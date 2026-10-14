@@ -12745,6 +12745,51 @@ html.theme-high-contrast {
   transform: none;
 }
 
+.arena-clear-topic-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.35rem;
+  transition: color 0.15s ease;
+}
+
+.arena-clear-topic-btn:hover {
+  color: #ef4444;
+}
+
+.arena-active-topic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 0.6rem;
+}
+
+.arena-active-topic-badge button {
+  background: transparent;
+  border: none;
+  color: #7c3aed;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0;
+  margin-left: 0.25rem;
+}
+
+.arena-active-topic-badge button:hover {
+  color: #ef4444;
+  text-decoration: underline;
+}
+
 .arena-vault-progress-pill {
   display: inline-flex;
   align-items: center;

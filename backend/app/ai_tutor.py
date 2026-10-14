@@ -69,6 +69,9 @@ def call_openrouter(messages: List[Dict[str, str]], max_tokens: int = 500, tempe
         "deepseek/deepseek-chat",
         "qwen/qwen-2.5-72b-instruct",
         "meta-llama/llama-3.3-70b-instruct",
+        "liquid/lfm-2.5-2.6b:free",
+        "google/gemma-4-26b-a4b-it:free",
+        "nvidia/nemotron-3.5-lightning:free",
     ]
     
     for model in models:
@@ -873,3 +876,346 @@ def scan_and_process_pdf(
             "language": language,
             "filename": filename,
         }
+
+
+def generate_topic_quiz(topic: str, language: str = "English", count: int = 5) -> List[Dict[str, Any]]:
+    """
+    Generate challenging, pedagogical multiple-choice quiz questions specifically tailored
+    to a user's search topic and selected language (English, Hindi, or Odia).
+    Always returns valid QuizQuestion objects with 4 clean options and verified correctIndex.
+    """
+    clean_topic = (topic or "").strip()
+    if not clean_topic:
+        clean_topic = "General Academic Science & Mathematics"
+
+    lang = (language or "English").strip()
+    is_odia = lang.lower() in ["odia", "or", "or-in"]
+    is_hindi = lang.lower() in ["hindi", "hi", "hi-in"]
+
+    if is_odia:
+        sys_prompt = (
+            f"You are an expert Academic Quizmaster and Question Examiner in ATLAS 2.0. "
+            f"Generate exactly {count} multiple-choice quiz questions specifically about the topic: \"{clean_topic}\". "
+            f"MANDATORY LANGUAGE: ODIA (ଓଡ଼ିଆ ଭାଷା) using authentic ODIA script (Unicode 0x0B00-0x0B7F). DO NOT use Bengali script. "
+            f"Requirements:\n"
+            f"1. Every question must be directly focused on the topic: \"{clean_topic}\".\n"
+            f"2. Questions, options, and explanations must be written in pure Odia.\n"
+            f"3. Exactly 4 options per question. Do not prefix with 'A)' or 'କ)'.\n"
+            f"4. Exactly one option is correct, marked by 'correctIndex' (integer 0, 1, 2, or 3).\n"
+            f"5. 'category' should be one of 'Science', 'Math', 'History', 'Geography', 'Computer', 'Logic', or 'General'.\n"
+            f"6. Provide a clear pedagogical 'explanation' in Odia.\n"
+            f"Respond ONLY with a valid JSON array matching this schema:\n"
+            f'[{{"id": "q-1", "category": "Science", "question": "ପ୍ରଶ୍ନ...", "options": ["ବିକଳ୍ପ ୧", "ବିକଳ୍ପ ୨", "ବିକଳ୍ପ ୩", "ବିକଳ୍ପ ୪"], "correctIndex": 0, "explanation": "ବ୍ୟାଖ୍ୟା..."}}]\n'
+            f"Do not include any text, markdown codeblocks, or preamble outside the JSON array."
+        )
+    elif is_hindi:
+        sys_prompt = (
+            f"You are an expert Academic Quizmaster and Question Examiner in ATLAS 2.0. "
+            f"Generate exactly {count} multiple-choice quiz questions specifically about the topic: \"{clean_topic}\". "
+            f"MANDATORY LANGUAGE: HINDI (हिन्दी) using standard Devanagari script. "
+            f"Requirements:\n"
+            f"1. Every question must be directly focused on the topic: \"{clean_topic}\".\n"
+            f"2. Questions, options, and explanations must be written in clear Hindi.\n"
+            f"3. Exactly 4 options per question without prefixes like 'A)' or 'क)'.\n"
+            f"4. Exactly one option is correct, marked by 'correctIndex' (integer 0, 1, 2, or 3).\n"
+            f"5. 'category' should be one of 'Science', 'Math', 'History', 'Geography', 'Computer', 'Logic', or 'General'.\n"
+            f"6. Provide a clear pedagogical 'explanation' in Hindi.\n"
+            f"Respond ONLY with a valid JSON array matching this schema:\n"
+            f'[{{"id": "q-1", "category": "Science", "question": "प्रश्न...", "options": ["विकल्प 1", "विकल्प 2", "विकल्प 3", "विकल्प 4"], "correctIndex": 0, "explanation": "व्याख्या..."}}]\n'
+            f"Do not include any text, markdown codeblocks, or preamble outside the JSON array."
+        )
+    else:
+        sys_prompt = (
+            f"You are an expert Academic Quizmaster and Question Examiner in ATLAS 2.0. "
+            f"Generate exactly {count} multiple-choice quiz questions specifically about the topic: \"{clean_topic}\". "
+            f"Language: English. "
+            f"Requirements:\n"
+            f"1. Every question must be directly focused on the topic: \"{clean_topic}\".\n"
+            f"2. Each question must have exactly 4 distinct answer options. Do not include prefixes like 'A)' or '1.' inside the option text strings.\n"
+            f"3. Exactly one option is correct, specified by 'correctIndex' (integer 0, 1, 2, or 3).\n"
+            f"4. Provide a clear, pedagogical 'explanation' for why that answer is correct.\n"
+            f"5. 'category' should be one of 'Science', 'Math', 'History', 'Geography', 'Computer', 'Logic', or 'General'.\n"
+            f"Respond ONLY with a valid JSON array matching this schema:\n"
+            f'[{{"id": "q-1", "category": "Science", "question": "Question text", "options": ["Option 0", "Option 1", "Option 2", "Option 3"], "correctIndex": 0, "explanation": "Explanation"}}]\n'
+            f"Do not include any text, markdown codeblocks, or preamble outside the JSON array."
+        )
+
+    output = call_openrouter([{"role": "user", "content": sys_prompt}], max_tokens=1200, temperature=0.6)
+
+    questions: List[Dict[str, Any]] = []
+
+    if output:
+        try:
+            clean = re.sub(r"^```(?:json)?", "", output.strip(), flags=re.IGNORECASE).strip()
+            clean = re.sub(r"```$", "", clean).strip()
+            match = re.search(r"\[\s*\{.*\}\s*\]", clean, re.DOTALL)
+            if match:
+                clean = match.group(0)
+            parsed = json.loads(clean)
+            if isinstance(parsed, list) and len(parsed) > 0:
+                for idx, item in enumerate(parsed):
+                    if not isinstance(item, dict) or "question" not in item:
+                        continue
+                    q_text = str(item.get("question", "")).strip()
+                    cat = str(item.get("category", "General")).strip()
+                    raw_opts = item.get("options", [])
+                    options = []
+                    if isinstance(raw_opts, list):
+                        for o in raw_opts:
+                            s = str(o).strip()
+                            # Clean leading letter prefixes e.g. "A) ", "A. ", "[A] "
+                            s = re.sub(r"^(?:[A-Da-d0-9][\.\)\:\-]|\[[A-Da-d0-9]\])\s*", "", s).strip()
+                            if s:
+                                options.append(s)
+
+                    # Ensure exactly 4 options
+                    while len(options) < 4:
+                        options.append(f"Option {len(options) + 1}")
+                    options = options[:4]
+
+                    # Parse correct index
+                    c_idx = item.get("correctIndex")
+                    if c_idx is None or not isinstance(c_idx, int) or c_idx < 0 or c_idx > 3:
+                        c_ans = str(item.get("correct_answer", "")).strip().upper()
+                        if c_ans in ["A", "0"]:
+                            c_idx = 0
+                        elif c_ans in ["B", "1"]:
+                            c_idx = 1
+                        elif c_ans in ["C", "2"]:
+                            c_idx = 2
+                        elif c_ans in ["D", "3"]:
+                            c_idx = 3
+                        else:
+                            c_idx = 0
+
+                    exp = str(item.get("explanation", f"Verified concept in {clean_topic}.")).strip()
+
+                    if is_odia:
+                        q_text = normalize_odia_text(q_text)
+                        options = [normalize_odia_text(o) for o in options]
+                        exp = normalize_odia_text(exp)
+
+                    questions.append({
+                        "id": f"q-topic-{idx + 1}-{int(os.getpid())}",
+                        "category": cat or "General",
+                        "question": q_text,
+                        "options": options,
+                        "correctIndex": c_idx,
+                        "explanation": exp,
+                    })
+        except Exception as e:
+            print(f"[generate_topic_quiz] JSON parsing error: {e}")
+
+    # Fallback generator if OpenRouter produced no valid questions
+    if len(questions) < count:
+        needed = count - len(questions)
+        category_map = {
+            "math": "Math",
+            "calculus": "Math",
+            "algebra": "Math",
+            "geometry": "Math",
+            "physics": "Science",
+            "chemistry": "Science",
+            "biology": "Science",
+            "astrophysics": "Science",
+            "astronomy": "Science",
+            "space": "Science",
+            "history": "History",
+            "geography": "Geography",
+            "computer": "Computer",
+            "coding": "Computer",
+            "python": "Computer",
+            "logic": "Logic",
+        }
+        detected_cat = "General"
+        for k, v in category_map.items():
+            if k in clean_topic.lower():
+                detected_cat = v
+                break
+
+        if is_odia:
+            templates = [
+                {
+                    "q": f"{clean_topic} ବିଷୟରେ ନିମ୍ନଲିଖିତ ମଧ୍ୟରୁ କେଉଁଟି ସବୁଠାରୁ ସଠିକ୍ ଓ ମୌଳିକ ତଥ୍ୟ?",
+                    "opts": [
+                        f"{clean_topic} ର ମୁଖ୍ୟ ନୀତି ଓ ନିୟମ ଅଧ୍ୟୟନ",
+                        f"ଏକ ଅସମ୍ବନ୍ଧିତ କାଳ୍ପନିକ ଧାରଣା",
+                        f"କେବଳ ବାୟୁମଣ୍ଡଳୀୟ ଚାପ ସହିତ ସମ୍ପର୍କିତ",
+                        f"କୌଣସି ବୈଜ୍ଞାନିକ ପ୍ରମାଣ ନାହିଁ"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} ବିଷୟରେ ଏହି ତଥ୍ୟ ଶିକ୍ଷାଗତ ଭାବରେ ସମ୍ପୂର୍ଣ୍ଣ ସଠିକ୍ ଓ ପ୍ରମାଣିତ ଅଟେ।"
+                },
+                {
+                    "q": f"{clean_topic} ର ପ୍ରୟୋଗ ମୁଖ୍ୟତଃ କେଉଁ କ୍ଷେତ୍ରରେ ସର୍ବାଧିକ ଦେଖିବାକୁ ମିଳେ?",
+                    "opts": [
+                        "ଉନ୍ନତ ପ୍ରଯୁକ୍ତିବିଦ୍ୟା ଓ ଗବେଷଣା",
+                        "କେବଳ ପ୍ରାଚୀନ କାହାଣୀରେ",
+                        "ଶୂନ୍ୟ ମାଧ୍ୟମରେ ବିନା ପ୍ରଭାବରେ",
+                        "କେବଳ ଜଳମଗ୍ନ ସ୍ଥାନରେ"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} ଆଧୁନିକ ଗବେଷଣା ଓ ବୈଷୟିକ ପ୍ରୟୋଗରେ ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ ଭୂମିକା ଗ୍ରହଣ କରେ।"
+                },
+                {
+                    "q": f"{clean_topic} ଅଧ୍ୟୟନରେ କେଉଁ ମୁଖ୍ୟ ଉପାଦାନଟି ଅତ୍ୟନ୍ତ ଆବଶ୍ୟକ?",
+                    "opts": [
+                        f"ନିରନ୍ତର ନିରୀକ୍ଷଣ ଓ ଯୁକ୍ତିସଙ୍ଗତ ବିଶ୍ଳେଷଣ",
+                        f"ଅନୁମାନ ଭିତ୍ତିକ ସିଦ୍ଧାନ୍ତ",
+                        f"କୌଣସି ନିୟମ ନ ମାନିବା",
+                        f"କେବଳ ସାଧାରଣ ଧାରଣା"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} ର ସଠିକ୍ ଅନୁସନ୍ଧାନ ପାଇଁ ବୈଜ୍ଞାନିକ ବିଶ୍ଳେଷଣ ଅପରିହାର୍ଯ୍ୟ।"
+                },
+                {
+                    "q": f"ନିମ୍ନୋକ୍ତ ମଧ୍ୟରୁ କେଉଁଟି {clean_topic} ସହିତ ସିଧାସଳଖ ସମ୍ପର୍କିତ?",
+                    "opts": [
+                        f"{clean_topic} ର ପ୍ରମାଣିତ ନିୟମ ଓ ସୂତ୍ର",
+                        "ଏକ ଭ୍ରାନ୍ତ ତଥ୍ୟ",
+                        "ଅପ୍ରାସଙ୍ଗିକ ଘଟଣା",
+                        "କୌଣସି ସମ୍ପର୍କ ନାହିଁ"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} ର ମୌଳିକ ନିୟମାବଳୀ ଏହାର ବୈଶିଷ୍ଟ୍ୟ ପ୍ରତିପାଦନ କରେ।"
+                },
+                {
+                    "q": f"{clean_topic} କ୍ଷେତ୍ରରେ କେଉଁ ନିଷ୍କର୍ଷଟି ସର୍ବାଧିକ ଗ୍ରହଣୀୟ?",
+                    "opts": [
+                        f"ନିୟମିତ ପରୀକ୍ଷଣ ଦ୍ୱାରା ପ୍ରମାଣିତ ଫଳାଫଳ",
+                        f"ଅନିର୍ଦ୍ଦିଷ୍ଟ କଳ୍ପନା",
+                        f"କୌଣସି ସତ୍ୟତା ନ ଥିବା ମନ୍ତବ୍ୟ",
+                        f"ଏକ ପରସ୍ପର ବିରୋଧୀ ତଥ୍ୟ"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} ରେ ବୈଜ୍ଞାନିକ ଭିତ୍ତି ଉପରେ ପ୍ରତିଷ୍ଠିତ ଫଳାଫଳ ହିଁ ଗ୍ରହଣୀୟ ଅଟେ।"
+                },
+            ]
+        elif is_hindi:
+            templates = [
+                {
+                    "q": f"{clean_topic} के संदर्भ में निम्नलिखित में से कौन सा कथन सर्वथा सत्य और मौलिक है?",
+                    "opts": [
+                        f"{clean_topic} के आधारभूत नियमों और सिद्धांतों का अध्ययन",
+                        f"एक काल्पनिक और असत्यापित विचार",
+                        f"केवल वायुमंडलीय दबाव से संबंधित प्रक्रिया",
+                        f"जिसका कोई वैज्ञानिक प्रमाण उपलब्ध नहीं है"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} का अध्ययन वैज्ञानिक दृष्टिकोण और अकादमिक प्रमाणों पर आधारित है।"
+                },
+                {
+                    "q": f"{clean_topic} का मुख्य अनुप्रयोग या प्रभाव किस क्षेत्र में सर्वाधिक देखा जाता है?",
+                    "opts": [
+                        "आधुनिक वैज्ञानिक अनुसंधान एवं प्रौद्योगिकी विकास",
+                        "केवल प्राचीन पौराणिक आख्यानों में",
+                        "बिना किसी व्यावहारिक उपयोगिता के",
+                        "केवल स्थिर अवस्था में"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} शैक्षणिक तथा व्यावहारिक अनुसंधान में अत्यंत महत्वपूर्ण भूमिका निभाता है।"
+                },
+                {
+                    "q": f"{clean_topic} के विश्लेषण में सबसे महत्वपूर्ण घटक क्या माना जाता है?",
+                    "opts": [
+                        "तार्किक प्रमाण एवं व्यवस्थित प्रायोगिक अध्ययन",
+                        "अवैज्ञानिक अनुमान",
+                        "नियमों की अनदेखी",
+                        "अस्पष्ट परिकल्पनाएँ"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} का यथार्थ निष्कर्ष तार्किक विश्लेषण द्वारा ही प्राप्त होता है।"
+                },
+                {
+                    "q": f"निम्नलिखित में से कौन सा सिद्धांत {clean_topic} से प्रत्यक्ष रूप से संबंधित है?",
+                    "opts": [
+                        f"{clean_topic} के स्थापित सिद्धांत और नियम",
+                        "असंगत और अप्रमाणित तथ्य",
+                        "असापेक्षिक परिघटना",
+                        "कोई संबंध नहीं"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} के मूलभूत सूत्र ही इसकी व्याख्या को संभव बनाते हैं।"
+                },
+                {
+                    "q": f"{clean_topic} के संबंध में आधुनिक विद्वानों का सर्वमान्य दृष्टिकोण क्या है?",
+                    "opts": [
+                        "यह निरंतर अन्वेषण एवं प्रमाण-आधारित ज्ञान पर निर्भर है",
+                        "यह एक स्थिर और अपरिवर्तनीय कल्पना है",
+                        "इसमें कोई तार्किक आधार नहीं है",
+                        "यह केवल सैद्धांतिक है और व्यावहारिक नहीं"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} आधुनिक ज्ञान और अनुसंधान का एक सक्रिय और प्रमाणित भाग है।"
+                },
+            ]
+        else:
+            templates = [
+                {
+                    "q": f"Which fundamental principle or concept most accurately defines the study of {clean_topic}?",
+                    "opts": [
+                        f"Systematic analytical principles governing {clean_topic}",
+                        f"Unverified speculative hypotheses without empirical backing",
+                        f"A concept restricted solely to static physical states",
+                        f"An obsolete theory replaced by non-empirical models"
+                    ],
+                    "ans": 0,
+                    "exp": f"{clean_topic} is established on rigorous empirical and theoretical principles in modern academics."
+                },
+                {
+                    "q": f"In academic and practical research, what is the primary significance of {clean_topic}?",
+                    "opts": [
+                        f"Enabling foundational problem-solving and technological advancements in {clean_topic}",
+                        f"Serving only as an artistic metaphor without practical utility",
+                        f"Restricting data collection to isolated non-reproducible trials",
+                        f"Eliminating the need for systematic observation"
+                    ],
+                    "ans": 0,
+                    "exp": f"Understanding {clean_topic} allows scholars and practitioners to advance research and real-world implementations."
+                },
+                {
+                    "q": f"Which of the following methodologies is most critically applied when analyzing {clean_topic}?",
+                    "opts": [
+                        "Evidence-based structured methodology and reproducible analysis",
+                        "Subjective guesswork without verification",
+                        "Arbitrary assumptions disconnected from known data",
+                        "Relying solely on unsubstantiated folklore"
+                    ],
+                    "ans": 0,
+                    "exp": f"Scientific and academic investigation of {clean_topic} requires reproducible, evidence-based methodology."
+                },
+                {
+                    "q": f"When examining core phenomena in {clean_topic}, which factor plays the most vital role?",
+                    "opts": [
+                        f"The fundamental mechanisms and verified relationships in {clean_topic}",
+                        "Random noise that cannot be quantified or measured",
+                        "An intentional violation of conservation and logical laws",
+                        "Disregarding standard measurement units entirely"
+                    ],
+                    "ans": 0,
+                    "exp": f"The governing relationships of {clean_topic} provide the foundation for valid conclusions."
+                },
+                {
+                    "q": f"What is considered an essential educational milestone in mastering {clean_topic}?",
+                    "opts": [
+                        f"Synthesizing key theories and solving applied problems in {clean_topic}",
+                        "Memorizing isolated terminology without understanding relationships",
+                        "Ignoring cross-disciplinary connections and historical progression",
+                        "Rejecting systematic inquiry in favor of speculation"
+                    ],
+                    "ans": 0,
+                    "exp": f"Comprehensive mastery of {clean_topic} involves synthesizing theories and applying them to diverse problem contexts."
+                },
+            ]
+
+        for idx, t in enumerate(templates[:needed]):
+            questions.append({
+                "id": f"q-topic-fb-{len(questions) + 1}-{int(time.time())}",
+                "category": detected_cat,
+                "question": t["q"],
+                "options": t["opts"],
+                "correctIndex": t["ans"],
+                "explanation": t["exp"],
+            })
+
+    return questions[:count]

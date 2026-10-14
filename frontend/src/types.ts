@@ -234,6 +234,15 @@ export interface QuizQuestion {
   explanation: string;
 }
 
+export interface TopicQuizQuestion {
+  id: string;
+  category: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
 export type ActivityType = 'math' | 'qa' | 'image_scan' | 'pdf_scan' | 'flashcard' | 'voice' | 'quiz' | 'geography';
 
 export interface LearningActivity {

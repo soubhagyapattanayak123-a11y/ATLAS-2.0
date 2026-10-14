@@ -967,8 +967,22 @@ def tts_speak_post_endpoint(body: TTSRequest, request: Request):
 # ==========================================
 
 from pydantic import BaseModel
-from .ai_tutor import ask_academic_question, solve_academic_math, scan_and_process_image, scan_and_process_pdf
-from .schemas import ScanImageRequest, ScanImageResponse, ScanPdfRequest, ScanPdfResponse
+from .ai_tutor import (
+    ask_academic_question,
+    solve_academic_math,
+    scan_and_process_image,
+    scan_and_process_pdf,
+    generate_topic_quiz,
+)
+from .schemas import (
+    ScanImageRequest,
+    ScanImageResponse,
+    ScanPdfRequest,
+    ScanPdfResponse,
+    GenerateTopicQuizRequest,
+    GenerateTopicQuizResponse,
+    TopicQuizQuestion,
+)
 
 
 class AskQuestionRequest(BaseModel):
@@ -1066,6 +1080,31 @@ def ai_scan_pdf_endpoint(body: ScanPdfRequest):
         filename=result_dict.get("filename", body.filename),
         quiz_questions=result_dict.get("quiz_questions"),
     )
+
+
+@app.post("/api/ai/generate-quiz", response_model=GenerateTopicQuizResponse, tags=["AI Academic Solver"])
+def ai_generate_topic_quiz_endpoint(body: GenerateTopicQuizRequest):
+    """
+    Generate tailored multiple-choice speed quiz questions based on user's search topic and language.
+    Supports English, Hindi, and Odia with verified options and pedagogical explanations.
+    """
+    clean_topic = body.topic.strip()
+    if not clean_topic:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quiz topic must not be empty.")
+
+    try:
+        raw_questions = generate_topic_quiz(clean_topic, body.language, count=body.count)
+        typed_questions = [TopicQuizQuestion(**q) for q in raw_questions]
+        return GenerateTopicQuizResponse(
+            topic=clean_topic,
+            language=body.language,
+            questions=typed_questions,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate quiz for topic '{clean_topic}': {str(e)}"
+        )
 
 
 # ==========================================

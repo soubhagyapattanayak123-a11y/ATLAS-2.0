@@ -333,6 +333,27 @@ class QuizQuestionItem(BaseModel):
     explanation: str
 
 
+class TopicQuizQuestion(BaseModel):
+    id: str
+    category: str
+    question: str
+    options: List[str]
+    correctIndex: int
+    explanation: str
+
+
+class GenerateTopicQuizRequest(BaseModel):
+    topic: str = Field(..., description="Academic topic to generate quiz questions for")
+    language: str = Field(default="English", description="'English', 'Hindi', or 'Odia'")
+    count: int = Field(default=5, ge=1, le=10, description="Number of questions to generate")
+
+
+class GenerateTopicQuizResponse(BaseModel):
+    topic: str
+    language: str
+    questions: List[TopicQuizQuestion]
+
+
 class ScanImageRequest(BaseModel):
     image: str = Field(..., description="Base64 data URL string of the image (e.g. data:image/png;base64,...)")
     mode: str = Field(default="extract_text", description="'extract_text', 'qa', 'explain', or 'quiz'")

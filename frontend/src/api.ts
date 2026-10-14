@@ -24,6 +24,7 @@ import type {
   AdminStats,
   FlashcardItem,
   QuizQuestion,
+  TopicQuizQuestion,
   LearningActivity,
   LearningActivityInput,
   FirewallStatus,
@@ -910,6 +911,228 @@ Return ONLY the raw JSON array without markdown or extra commentary.`;
         result: fallbackResult,
         language,
         filename,
+      };
+    }
+  },
+
+  // Battle of Brains Topic Quiz Generator (AI Backend with Multi-Modal Fallback)
+  async generateTopicQuiz(
+    topic: string,
+    language: string = 'English',
+    count: number = 5
+  ): Promise<{ topic: string; language: string; questions: TopicQuizQuestion[] }> {
+    const isOdia = ['odia', 'or', 'or-in'].includes(language.toLowerCase());
+    const isHindi = ['hindi', 'hi', 'hi-in'].includes(language.toLowerCase());
+
+    try {
+      const data = await request<{ topic: string; language: string; questions: TopicQuizQuestion[] }>('/ai/generate-quiz', {
+        method: 'POST',
+        body: JSON.stringify({
+          topic,
+          language,
+          count,
+        }),
+      });
+
+      if (data && Array.isArray(data.questions) && data.questions.length > 0) {
+        if (isOdia) {
+          data.questions = data.questions.map((q) => ({
+            ...q,
+            question: normalizeOdiaScript(q.question),
+            options: q.options.map(normalizeOdiaScript),
+            explanation: normalizeOdiaScript(q.explanation),
+          }));
+        }
+        return data;
+      }
+      throw new Error('Empty questions returned from backend');
+    } catch (err: any) {
+      console.warn('[Quiz API] Backend /ai/generate-quiz failed, using resilient topic synthesizer:', err);
+
+      // Intelligent Client Fallback generator
+      const cleanTopic = (topic || '').trim() || 'General Science & Knowledge';
+      const fallbackQuestions: TopicQuizQuestion[] = [
+        {
+          id: `fb-1-${Date.now()}`,
+          category: 'Science',
+          question: isOdia
+            ? `${cleanTopic} ବିଷୟରେ ନିମ୍ନଲିଖିତ ମଧ୍ୟରୁ କେଉଁଟି ସର୍ବାଧିକ ପ୍ରାସଙ୍ଗିକ ଓ ସଠିକ୍ ତଥ୍ୟ?`
+            : isHindi
+            ? `${cleanTopic} के संदर्भ में निम्नलिखित में से कौन सा कथन सर्वाधिक प्रासंगिक और सत्य है?`
+            : `Which of the following statements most accurately defines the core concept of ${cleanTopic}?`,
+          options: isOdia
+            ? [
+                `${cleanTopic} ର ମୌଳିକ ନିୟମ ଓ ସିଦ୍ଧାନ୍ତ`,
+                'ଏକ ଅଣପ୍ରମାଣିତ କଳ୍ପନା',
+                'କୌଣସି ବୈଜ୍ଞାନିକ ଭିତ୍ତି ନାହିଁ',
+                'ଅପ୍ରାସଙ୍ଗିକ ଘଟଣା'
+              ]
+            : isHindi
+            ? [
+                `${cleanTopic} के मूलभूत नियम और प्रमाणित सिद्धांत`,
+                'एक अप्रमाणित एवं काल्पनिक विचार',
+                'जिसका कोई वैज्ञानिक आधार नहीं है',
+                'एक असंगत परिघटना'
+              ]
+            : [
+                `Fundamental principles and verified relationships governing ${cleanTopic}`,
+                'An unverified speculative fiction without empirical basis',
+                'A concept restricted entirely to non-physical imagination',
+                'An obsolete premise rejected by academic consensus'
+              ],
+          correctIndex: 0,
+          explanation: isOdia
+            ? `${cleanTopic} ଶିକ୍ଷାଗତ ଏବଂ ବୈଜ୍ଞାନିକ ଭାବରେ ପ୍ରମାଣିତ ନିୟମ ଉପରେ ଆଧାରିତ।`
+            : isHindi
+            ? `${cleanTopic} शैक्षणिक और वैज्ञानिक रूप से स्थापित सिद्धांतों पर आधारित है।`
+            : `${cleanTopic} is established upon verified academic and empirical principles.`,
+        },
+        {
+          id: `fb-2-${Date.now()}`,
+          category: 'Science',
+          question: isOdia
+            ? `${cleanTopic} ର ପ୍ରୟୋଗ ମୁଖ୍ୟତଃ କେଉଁ କ୍ଷେତ୍ରରେ ସର୍ବାଧିକ ଦେଖିବାକୁ ମିଳେ?`
+            : isHindi
+            ? `${cleanTopic} का व्यावहारिक उपयोग या प्रभाव किस क्षेत्र में सर्वाधिक देखा जाता है?`
+            : `In modern research and practical application, how is ${cleanTopic} primarily utilized?`,
+          options: isOdia
+            ? [
+                'ଉନ୍ନତ ପ୍ରଯୁକ୍ତିବିଦ୍ୟା ଓ ଗବେଷଣା',
+                'ପ୍ରାଚୀନ ଲୋକକଥା ମାତ୍ର',
+                'ଶୂନ୍ୟ ମାଧ୍ୟମରେ ବିନା ପ୍ରଭାବ',
+                'ଅବ୍ୟବହାର୍ଯ୍ୟ କଳ୍ପନା'
+              ]
+            : isHindi
+            ? [
+                'आधुनिक वैज्ञानिक अनुसंधान एवं व्यावहारिक प्रौद्योगिकी',
+                'केवल लोककथाओं और कल्पना में',
+                'बिना किसी उपयोगिता के',
+                'अव्यवहारिक सिद्धांतों में'
+              ]
+            : [
+                `Advancing modern analytical frameworks and practical technologies related to ${cleanTopic}`,
+                'Purely as an arbitrary placeholder without real-world utility',
+                'To bypass verified physical laws and standard methods',
+                'Restricting observations to unrepeatable conditions'
+              ],
+          correctIndex: 0,
+          explanation: isOdia
+            ? `${cleanTopic} ର ପ୍ରୟୋଗ ଆଧୁନିକ ଗବେଷଣାରେ ଅତ୍ୟନ୍ତ ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ।`
+            : isHindi
+            ? `${cleanTopic} आधुनिक अनुसंधान में महत्वपूर्ण योगदान देता है।`
+            : `Systematic understanding of ${cleanTopic} is essential for academic problem solving.`,
+        },
+        {
+          id: `fb-3-${Date.now()}`,
+          category: 'Logic',
+          question: isOdia
+            ? `${cleanTopic} ଅଧ୍ୟୟନରେ ନିମ୍ନୋକ୍ତ ମଧ୍ୟରୁ କେଉଁ ପଦ୍ଧତିଟି ଅପରିହାର୍ଯ୍ୟ?`
+            : isHindi
+            ? `${cleanTopic} के व्यवस्थित अध्ययन के लिए कौन सी विधि अनिवार्य मानी जाती है?`
+            : `Which methodology is considered most critical when conducting rigorous analysis on ${cleanTopic}?`,
+          options: isOdia
+            ? [
+                'ଯୁକ୍ତିସଙ୍ଗତ ନିରୀକ୍ଷଣ ଓ ପ୍ରମାଣ ଭିତ୍ତିକ ବିଶ୍ଳେଷଣ',
+                'କେବଳ ଅନୁମାନ କରିବା',
+                'ନିୟମକୁ ଅଣଦେଖା କରିବା',
+                'ଅସଙ୍ଗତ ଉତ୍ତର'
+              ]
+            : isHindi
+            ? [
+                'तार्किक अवलोकन एवं साक्ष्य-आधारित विश्लेषण',
+                'केवल निराधार अनुमान लगाना',
+                'वैज्ञानिक नियमों की उपेक्षा करना',
+                'असंगत निष्कर्ष'
+              ]
+            : [
+                'Evidence-based structured observation and reproducible analysis',
+                'Subjective speculation with no empirical verification',
+                'Discarding standard logical consistency entirely',
+                'Relying solely on arbitrary assumptions'
+              ],
+          correctIndex: 0,
+          explanation: isOdia
+            ? `ପ୍ରମାଣ ଭିତ୍ତିକ ବିଶ୍ଳେଷଣ ${cleanTopic} ର ସଠିକ୍ ଅନୁସନ୍ଧାନ ପାଇଁ ମୁଖ୍ୟ ଆବଶ୍ୟକତା।`
+            : isHindi
+            ? `साक्ष्य-आधारित विश्लेषण ही ${cleanTopic} के अध्ययन की मुख्य आवश्यकता है।`
+            : `Evidence-based methodologies ensure high fidelity and reproducibility in the study of ${cleanTopic}.`,
+        },
+        {
+          id: `fb-4-${Date.now()}`,
+          category: 'Science',
+          question: isOdia
+            ? `ନିମ୍ନଲିଖିତ ମଧ୍ୟରୁ କେଉଁ କାରକଟି ${cleanTopic} ର କାର୍ଯ୍ୟକାରିତା ଉପରେ ସିଧାସଳଖ ପ୍ରଭାବ ପକାଏ?`
+            : isHindi
+            ? `निम्नलिखित में से कौन सा कारक ${cleanTopic} की कार्यप्रणाली पर प्रत्यक्ष प्रभाव डालता है?`
+            : `Which factor directly governs the behavior and functional outcome in ${cleanTopic}?`,
+          options: isOdia
+            ? [
+                `${cleanTopic} ର ମୁଖ୍ୟ ପ୍ରକ୍ରିୟା ଓ ସଂରଚନାତ୍ମକ ଉପାଦାନ`,
+                'କୌଣସି ପ୍ରଭାବ ନ ଥିବା ବାହ୍ୟ ଶବ୍ଦ',
+                'ଅପରିବର୍ତ୍ତନୀୟ କାଳ୍ପନିକ ଚିତ୍ର',
+                'ସମ୍ପୂର୍ଣ୍ଣ ଅଜଣା ଶକ୍ତି'
+              ]
+            : isHindi
+            ? [
+                `${cleanTopic} के मुख्य घटक और अंतर्निहित प्रक्रियाएँ`,
+                'कोई प्रभाव न डालने वाले बाह्य कारक',
+                'अपरिवर्तनीय काल्पनिक परिदृश्य',
+                'अज्ञात और असंगत मान्यताएँ'
+              ]
+            : [
+                `Underlying governing mechanisms and structural interactions of ${cleanTopic}`,
+                'Uncorrelated external background noise',
+                'Random fluctuations with zero measurable magnitude',
+                'Unprovable supernatural hypotheses'
+              ],
+          correctIndex: 0,
+          explanation: isOdia
+            ? `${cleanTopic} ର ଅନ୍ତର୍ନିହିତ ପ୍ରକ୍ରିୟା ଏହାର କାର୍ଯ୍ୟକାରିତା ନିର୍ଦ୍ଧାରଣ କରେ।`
+            : isHindi
+            ? `${cleanTopic} के आंतरिक घटक ही इसके परिणामों को निर्धारित करते हैं।`
+            : `The foundational interactions within ${cleanTopic} dictate its observed behavior.`,
+        },
+        {
+          id: `fb-5-${Date.now()}`,
+          category: 'General',
+          question: isOdia
+            ? `${cleanTopic} ବିଷୟରେ ଜ୍ଞାନ ଆହରଣ କରିବାର ଶ୍ରେଷ୍ଠ ଉଦ୍ଦେଶ୍ୟ କ\'ଣ?`
+            : isHindi
+            ? `${cleanTopic} का अध्ययन करने का मुख्य शैक्षणिक उद्देश्य क्या है?`
+            : `What is the principal academic objective of mastering ${cleanTopic}?`,
+          options: isOdia
+            ? [
+                `${cleanTopic} ର ସିଦ୍ଧାନ୍ତ ବୁଝି ବାସ୍ତବ ସମସ୍ୟାର ସମାଧାନ କରିବା`,
+                'କେବଳ ଅର୍ଥହୀନ ଶବ୍ଦ ମନେରଖିବା',
+                'ଅନ୍ୟ ବିଷୟ ସହିତ ସମ୍ପର୍କ ଭାଙ୍ଗିବା',
+                'ପ୍ରମାଣକୁ ଅସ୍ୱୀକାର କରିବା'
+              ]
+            : isHindi
+            ? [
+                `${cleanTopic} के सिद्धांतों को समझकर वास्तविक समस्याओं का समाधान करना`,
+                'केवल रटकर परीक्षा देना',
+                'अन्य विषयों से संबंध समाप्त करना',
+                'प्रमाणों को नकारना'
+              ]
+            : [
+                `Synthesizing concepts of ${cleanTopic} to solve real-world and theoretical problems`,
+                'Memorizing isolated terms without comprehending underlying principles',
+                'Rejecting interdisciplinary connections to other academic fields',
+                'Ignoring analytical evidence in favor of speculation'
+              ],
+          correctIndex: 0,
+          explanation: isOdia
+            ? `${cleanTopic} ର ସଠିକ୍ ଜ୍ଞାନ ବ୍ୟବହାରିକ ସମସ୍ୟା ସମାଧାନରେ ସହାୟକ ହୁଏ।`
+            : isHindi
+            ? `${cleanTopic} का ज्ञान वास्तविक समस्याओं को हल करने में सहायता करता है।`
+            : `Mastering ${cleanTopic} enables students to synthesize knowledge and apply it to complex academic challenges.`,
+        },
+      ];
+
+      return {
+        topic: cleanTopic,
+        language,
+        questions: fallbackQuestions.slice(0, count),
       };
     }
   },
