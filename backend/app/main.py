@@ -142,8 +142,13 @@ active_origins.extend([
     "http://127.0.0.1:8080",
 ])
 
-# Strict origin regex for localhost and verified Vercel deployments
-origin_regex = r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|https://[a-zA-Z0-9\-]+\.vercel\.app)$"
+# Comprehensive origin regex for localhost, all Vercel deployments (previews, branches, vercel.app, vercel.dev), and Render
+origin_regex = (
+    r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|"
+    r"https://([a-zA-Z0-9\-_]+\.)*vercel\.app|"
+    r"https://([a-zA-Z0-9\-_]+\.)*vercel\.dev|"
+    r"https://([a-zA-Z0-9\-_]+\.)*onrender\.com)$"
+)
 
 # Enable hardened CORS restricted to localhost, Vercel app domains, and authorized origins
 app.add_middleware(

@@ -267,12 +267,38 @@ def _send_via_resend(api_key: str, recipient_email: str, subject: str, html_cont
         return resp.status in (200, 201)
 
 
+_CACHED_BREVO_EMAIL: Optional[str] = None
+
+
 def _get_brevo_verified_sender(api_key: str, fallback_email: str) -> str:
-    """Ensure Brevo sends exclusively from atlas2.0official@gmail.com."""
-    env_sender = os.getenv("BREVO_SENDER_EMAIL", os.getenv("BREVO_FROM_EMAIL", os.getenv("SMTP_FROM_EMAIL", "atlas2.0official@gmail.com"))).strip()
-    if env_sender and "soubhagyapattanayak" not in env_sender.lower():
+    """
+    Detect the Brevo account's verified registered email so transactional emails
+    never fail DMARC or get dropped by mail providers as unauthenticated sender spoofs.
+    """
+    global _CACHED_BREVO_EMAIL
+    env_sender = os.getenv("BREVO_SENDER_EMAIL", os.getenv("BREVO_FROM_EMAIL", "")).strip()
+    if env_sender and env_sender.lower() != "atlas2.0official@gmail.com":
         return env_sender
-    return "atlas2.0official@gmail.com"
+
+    if _CACHED_BREVO_EMAIL:
+        return _CACHED_BREVO_EMAIL
+
+    try:
+        req = urllib.request.Request(
+            "https://api.brevo.com/v3/account",
+            headers={"api-key": api_key.strip(), "accept": "application/json", "User-Agent": "ATLAS-2.0-Security/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            acc_email = data.get("email")
+            if acc_email:
+                _CACHED_BREVO_EMAIL = acc_email
+                logger.info(f"[BREVO AUTO-SENDER] Successfully detected verified account email: {acc_email}")
+                return acc_email
+    except Exception as e:
+        logger.warning(f"[BREVO AUTO-SENDER] Could not auto-detect account email: {e}")
+
+    return env_sender or fallback_email
 
 
 def _send_via_brevo(api_key: str, recipient_email: str, subject: str, html_content: str, text_content: str, from_name: str, from_addr: str) -> bool:
@@ -293,6 +319,7 @@ def _send_via_brevo(api_key: str, recipient_email: str, subject: str, html_conte
     sender_email = _get_brevo_verified_sender(clean_key, from_addr)
     payload = {
         "sender": {"name": from_name, "email": sender_email},
+        "replyTo": {"name": from_name, "email": "atlas2.0official@gmail.com"},
         "to": [{"email": recipient_email}],
         "subject": subject,
         "htmlContent": html_content,

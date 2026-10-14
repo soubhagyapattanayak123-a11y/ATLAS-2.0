@@ -944,14 +944,14 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  let response: Response;
+  let response: Response | undefined;
   try {
     response = await fetch(url, {
       ...options,
       headers,
     });
   } catch (err: any) {
-    // If request failed via relative /api, attempt direct connection to backend (local dev fallback)
+    // 1. Local development fallback
     if (url.startsWith('/api') && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       try {
         const directUrl = `http://127.0.0.1:8000${url}`;
@@ -964,7 +964,25 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
           'Unable to connect to the backend server. Please make sure the FastAPI server is running on http://127.0.0.1:8000.'
         );
       }
-    } else {
+    }
+    // 2. Vercel deployment fallback: If direct fetch to remote Render backend failed, try Vercel same-origin /api rewrite proxy
+    else if (
+      typeof window !== 'undefined' &&
+      (window.location.hostname.endsWith('vercel.app') || window.location.hostname.includes('vercel')) &&
+      !url.startsWith('/api')
+    ) {
+      try {
+        const proxyUrl = `/api${cleanEndpoint}`;
+        response = await fetch(proxyUrl, {
+          ...options,
+          headers,
+        });
+      } catch {
+        // Fall through to error below
+      }
+    }
+
+    if (!response) {
       const isRemote = baseUrl.startsWith('http');
       const isRender = baseUrl.includes('onrender.com');
       let networkErr = `Unable to connect to the backend API at ${baseUrl}.`;
@@ -974,6 +992,29 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
         networkErr += ' Please ensure VITE_API_URL is configured in your deployment settings.';
       }
       throw new Error(networkErr);
+    }
+  }
+
+  // 3. If relative /api on Vercel returned 404/405/502 (e.g. rewrite missing or cold start), try direct Render backend fallback
+  if (
+    !response.ok &&
+    (response.status === 404 || response.status === 405 || response.status === 502) &&
+    typeof window !== 'undefined' &&
+    url.startsWith('/api') &&
+    (window.location.hostname.endsWith('vercel.app') || window.location.hostname.includes('vercel'))
+  ) {
+    try {
+      const directRenderUrl = `https://atlas-2-0-zf9q.onrender.com/api${cleanEndpoint}`;
+      const directRes = await fetch(directRenderUrl, {
+        ...options,
+        headers,
+      });
+      if (directRes.ok) {
+        if (directRes.status === 204) return {} as T;
+        return directRes.json();
+      }
+    } catch {
+      // Continue to normal error handling
     }
   }
 
