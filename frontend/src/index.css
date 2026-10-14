@@ -16099,6 +16099,11 @@ body[data-theme="amber"],
   color: #2563eb;
 }
 
+.toggle-tab-badge.online.asleep {
+  background: rgba(245, 158, 11, 0.18);
+  color: #b45309;
+}
+
 .toggle-tab-badge.offline {
   background: rgba(245, 158, 11, 0.22);
   color: #b45309;

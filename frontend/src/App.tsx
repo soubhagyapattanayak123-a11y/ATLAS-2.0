@@ -122,6 +122,14 @@ export function App() {
           setCurrentView('dashboard');
         })
         .catch(() => {
+          const offlineUser = api.getOfflineUser();
+          if (offlineUser && offlineUser.email && api.isOfflineMode()) {
+            setActiveUserStorageId(offlineUser.id);
+            setUser(offlineUser);
+            setAcademicTab('home');
+            setCurrentView('dashboard');
+            return;
+          }
           api.clearToken();
           clearActiveUserStorageId();
           purgeLegacyGlobalStorage();

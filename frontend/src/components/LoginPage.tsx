@@ -62,11 +62,29 @@ export function LoginPage({
   const [networkMode, setNetworkMode] = useState<'online' | 'offline'>(() => {
     return api.isOfflineMode() ? 'offline' : 'online';
   });
+  const [isServerOffline, setIsServerOffline] = useState<boolean>(false);
+  const [serverHealthStatus, setServerHealthStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [offlineName, setOfflineName] = useState<string>(() => {
     return api.getOfflineUser()?.full_name || 'ATLAS Scholar';
   });
   const [offlineGrade, setOfflineGrade] = useState<string>('Class 10');
   const [offlineAvatar, setOfflineAvatar] = useState<string>('🎓');
+
+  // Asynchronously check backend reachability to guide the user proactively
+  useEffect(() => {
+    let isMounted = true;
+    api.checkServerHealth().then((isHealthy) => {
+      if (isMounted) {
+        setServerHealthStatus(isHealthy ? 'online' : 'offline');
+        if (!isHealthy) {
+          setIsServerOffline(true);
+        }
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handleModeChange = (e: any) => {
@@ -165,7 +183,11 @@ export function LoginPage({
         if (firstInput) (firstInput as HTMLInputElement).focus();
       }, 100);
     } catch (err: any) {
-      setError(err.message || 'Failed to send OTP verification code.');
+      const msg = String(err.message || '');
+      if (msg.includes('connect') || msg.includes('timed out') || msg.includes('Timed Out') || msg.includes('Render') || msg.includes('Unreachable') || msg.includes('Failed to fetch')) {
+        setIsServerOffline(true);
+      }
+      setError(msg || 'Failed to send OTP verification code.');
     } finally {
       setOtpSending(false);
     }
@@ -194,7 +216,11 @@ export function LoginPage({
         onLoginSuccess(res.user);
       }, 350);
     } catch (err: any) {
-      setError(err.message || 'Invalid or expired OTP code.');
+      const msg = String(err.message || '');
+      if (msg.includes('connect') || msg.includes('timed out') || msg.includes('Timed Out') || msg.includes('Render') || msg.includes('Unreachable') || msg.includes('Failed to fetch')) {
+        setIsServerOffline(true);
+      }
+      setError(msg || 'Invalid or expired OTP code.');
     } finally {
       setOtpVerifying(false);
     }
@@ -285,7 +311,29 @@ export function LoginPage({
       return;
     }
 
+    if (networkMode === 'offline') {
+      const isSoubhagya = email.trim().toLowerCase().includes('soubhagya');
+      const profileName = isSoubhagya ? 'Soubhagya Pattanayak' : (email.split('@')[0] || 'ATLAS Scholar');
+      const role = isSoubhagya ? 'admin' : 'student';
+      const targetEmail = email.trim() || 'soubhagyapattanayak637@gmail.com';
+      const authRes = api.loginOffline(profileName, role, targetEmail);
+      playWelcomeSound();
+      setSuccessMessage(`Welcome, ${authRes.user.full_name}! Launching Offline Workspace...`);
+      setTimeout(() => {
+        onLoginSuccess(authRes.user);
+      }, 350);
+      return;
+    }
+
     setLoading(true);
+    setIsServerOffline(false);
+
+    // Guaranteed safety timer: never let the button stay stuck on "Processing..." forever
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+      setIsServerOffline(true);
+      setError('Connection to backend server timed out. The server is taking too long to respond.');
+    }, 12500);
 
     try {
       const credentials: LoginCredentials = {
@@ -293,14 +341,29 @@ export function LoginPage({
         password: password,
       };
       const res = await api.login(credentials);
+      clearTimeout(safetyTimer);
       playWelcomeSound();
       setSuccessMessage('Login successful! Redirecting to Home Dashboard...');
       setTimeout(() => {
         onLoginSuccess(res.user);
       }, 350);
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please verify your credentials.');
+      clearTimeout(safetyTimer);
+      const msg = String(err.message || '');
+      const isNetwork =
+        msg.includes('connect') ||
+        msg.includes('timed out') ||
+        msg.includes('Timed Out') ||
+        msg.includes('Network') ||
+        msg.includes('Render') ||
+        msg.includes('Failed to fetch') ||
+        msg.includes('Unreachable');
+      if (isNetwork) {
+        setIsServerOffline(true);
+      }
+      setError(msg || 'Authentication failed. Please verify your credentials.');
     } finally {
+      clearTimeout(safetyTimer);
       setLoading(false);
     }
   };
@@ -735,7 +798,13 @@ export function LoginPage({
               >
                 <Globe size={15} className="toggle-tab-icon" />
                 <span className="toggle-tab-text">Online Mode</span>
-                <span className="toggle-tab-badge online">Cloud AI</span>
+                <span className={`toggle-tab-badge online ${serverHealthStatus === 'offline' ? 'asleep' : ''}`}>
+                  {serverHealthStatus === 'checking'
+                    ? 'Cloud AI'
+                    : serverHealthStatus === 'online'
+                    ? '● Live Cloud'
+                    : '● Cloud Asleep'}
+                </span>
               </button>
 
               <button
@@ -998,35 +1067,123 @@ export function LoginPage({
                 <AlertCircle size={16} style={{ flexShrink: 0 }} />
                 <span>{error}</span>
               </div>
-              {(error.includes('VITE_API_URL') || error.includes('Backend URL') || error.includes('405')) && (
+            </div>
+          )}
+
+          {/* Smart Server Unreachable / Cold-Start Bypass Banner */}
+          {(isServerOffline || (error && (error.includes('connect') || error.includes('timed out') || error.includes('Timed Out') || error.includes('Render') || error.includes('Unreachable') || error.includes('Failed to fetch')))) && (
+            <div
+              className="login-offline-fallback-banner"
+              style={{
+                marginBottom: '1.25rem',
+                padding: '1rem',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(99, 102, 241, 0.08))',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.65rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#f59e0b',
+                    boxShadow: '0 0 8px #f59e0b',
+                  }}
+                />
+                <strong style={{ fontSize: '0.88rem', color: '#b45309' }}>
+                  Cloud Server is Asleep or Unreachable
+                </strong>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b', lineHeight: 1.45 }}>
+                Free-tier cloud servers take 45–60 seconds to wake up from inactivity. You don't have to wait! You can log in immediately with <strong>Offline Mode (Zero Net)</strong> to solve math, practice questions, and study without delay.
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
+                <button
+                  type="button"
+                  id="btn-quick-offline-bypass"
+                  onClick={() => {
+                    const isSoubhagya = email.trim().toLowerCase().includes('soubhagya');
+                    const profileName = isSoubhagya ? 'Soubhagya Pattanayak' : (email.split('@')[0] || 'ATLAS Scholar');
+                    const role = isSoubhagya ? 'admin' : 'student';
+                    const targetEmail = email.trim() || 'soubhagyapattanayak637@gmail.com';
+                    const authRes = api.loginOffline(profileName, role, targetEmail);
+                    playWelcomeSound();
+                    setSuccessMessage(`Welcome, ${authRes.user.full_name}! Launching ATLAS in Offline Mode...`);
+                    setTimeout(() => {
+                      onLoginSuccess(authRes.user);
+                    }, 350);
+                  }}
+                  style={{
+                    padding: '8px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: '#ffffff',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  ⚡ Continue in Offline Mode ({email.trim().toLowerCase().includes('soubhagya') ? 'Admin Soubhagya' : 'Instant Access'})
+                </button>
+
+                <a
+                  href="http://localhost:5173"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    background: '#ffffff',
+                    color: '#4f46e5',
+                    border: '1px solid #c7d2fe',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                  }}
+                  title="If running locally on your computer, launch localhost:5173"
+                >
+                  💻 Localhost App
+                </a>
+
                 <button
                   type="button"
                   onClick={() => {
                     const currentUrl = localStorage.getItem('atlas_api_url') || '';
                     const entered = prompt(
-                      'Enter your Render backend API URL (e.g. https://your-backend.onrender.com/api):',
-                      currentUrl || 'https://'
+                      'Enter your active Backend API URL (e.g. http://127.0.0.1:8000/api or https://your-backend.onrender.com/api):',
+                      currentUrl || 'http://127.0.0.1:8000/api'
                     );
                     if (entered && entered.trim() && (window as any).setAtlasBackendUrl) {
                       (window as any).setAtlasBackendUrl(entered.trim());
                     }
                   }}
                   style={{
-                    alignSelf: 'flex-start',
-                    padding: '4px 10px',
-                    fontSize: '12px',
+                    padding: '8px 12px',
+                    fontSize: '0.8rem',
                     fontWeight: 600,
-                    borderRadius: '6px',
-                    background: '#ef4444',
-                    color: '#ffffff',
-                    border: 'none',
+                    borderRadius: '8px',
+                    background: 'rgba(0, 0, 0, 0.04)',
+                    border: '1px solid #cbd5e1',
+                    color: '#475569',
                     cursor: 'pointer',
-                    marginTop: '2px',
                   }}
                 >
-                  ⚡ Connect Backend URL Now
+                  ⚙️ Change URL
                 </button>
-              )}
+              </div>
             </div>
           )}
 

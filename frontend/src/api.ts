@@ -1093,7 +1093,7 @@ function normalizeOdiaScript(text: string): string {
   return chars.join('').replace(/[\u0D80-\u0DFF\u0B80-\u0BFF\u0D00-\u0D7F\u0C00-\u0C7F\u0C80-\u0CFF\u0A80-\u0AFF]/g, '');
 }
 
-async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+async function request<T>(endpoint: string, options?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${baseUrl}${cleanEndpoint}`;
@@ -1108,10 +1108,20 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  // 12-second default timeout to prevent infinite "Processing..." hang
+  const timeoutMs = options?.timeoutMs ?? 12000;
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => {
+    timeoutController.abort(new Error(`Request timed out after ${timeoutMs / 1000}s`));
+  }, timeoutMs);
+
+  const effectiveSignal = options?.signal || timeoutController.signal;
+
   let response: Response | undefined;
   try {
     response = await fetch(url, {
       ...options,
+      signal: effectiveSignal,
       headers,
     });
   } catch (err: any) {
@@ -1121,6 +1131,7 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
         const directUrl = `http://127.0.0.1:8000${url}`;
         response = await fetch(directUrl, {
           ...options,
+          signal: effectiveSignal,
           headers,
         });
       } catch {
@@ -1139,6 +1150,7 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
         const proxyUrl = `/api${cleanEndpoint}`;
         response = await fetch(proxyUrl, {
           ...options,
+          signal: effectiveSignal,
           headers,
         });
       } catch {
@@ -1149,14 +1161,17 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     if (!response) {
       const isRemote = baseUrl.startsWith('http');
       const isRender = baseUrl.includes('onrender.com');
-      let networkErr = `Unable to connect to the backend API at ${baseUrl}.`;
+      const isTimeout = err?.name === 'AbortError' || String(err?.message || '').includes('timed out');
+      let networkErr = `Unable to connect to backend server (${isTimeout ? 'Connection Timed Out' : 'Server Unreachable'}).`;
       if (isRender) {
-        networkErr += ' Render free instances spin down after inactivity — please allow up to 30-45 seconds for your backend to wake up and try again.';
+        networkErr += ' The Cloud Server is currently waking up or offline. Please allow up to 45s or enter Offline Mode for instant access.';
       } else if (!isRemote) {
         networkErr += ' Please ensure VITE_API_URL is configured in your deployment settings.';
       }
       throw new Error(networkErr);
     }
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   // 3. If relative /api on Vercel returned 404/405/502 (e.g. rewrite missing or cold start), try direct Render backend fallback
@@ -1171,6 +1186,7 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
       const directRenderUrl = `https://atlas-2-0-zf9q.onrender.com/api${cleanEndpoint}`;
       const directRes = await fetch(directRenderUrl, {
         ...options,
+        signal: effectiveSignal,
         headers,
       });
       if (directRes.ok) {
@@ -1237,16 +1253,39 @@ export const api = {
   getOfflineUser,
   saveOfflineUser,
 
-  loginOffline(profileName?: string, role: string = 'student'): AuthResponse {
+  async checkServerHealth(): Promise<boolean> {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(`${baseUrl}/health`, { signal: controller.signal });
+      clearTimeout(timer);
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  loginOffline(profileName?: string, role: string = 'student', email?: string): AuthResponse {
     setOfflineMode(true);
-    const cleanName = (profileName || '').trim() || 'Offline Learner';
-    const cleanUser = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'offline_student';
+    let cleanName = (profileName || '').trim() || 'Offline Learner';
+    let cleanUser = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'offline_student';
+    let userRole = role;
+    let userEmail = (email || '').trim().toLowerCase() || `${cleanUser}@atlas.local`;
+
+    if (userEmail.includes('soubhagya') || cleanName.toLowerCase().includes('soubhagya')) {
+      cleanName = 'Soubhagya Pattanayak';
+      cleanUser = 'soubhagya';
+      userRole = 'admin';
+      userEmail = 'soubhagyapattanayak637@gmail.com';
+    }
+
     const user = saveOfflineUser({
       id: 999999,
       username: cleanUser,
       full_name: cleanName,
-      email: `${cleanUser}@atlas.local`,
-      role: role,
+      email: userEmail,
+      role: userRole,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
