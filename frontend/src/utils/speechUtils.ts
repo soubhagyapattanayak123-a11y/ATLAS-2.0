@@ -208,15 +208,18 @@ export function speakWithBrowserFallback(
     }
 
     utterance.onstart = () => {
+      broadcastCaption(clean, true, 'Atlas Voice');
       if (options?.onStart) options.onStart();
     };
 
     utterance.onend = () => {
+      broadcastCaption('', false);
       if (options?.onEnd) options.onEnd();
     };
 
     utterance.onerror = (e) => {
       console.warn('Browser SpeechSynthesis error:', e);
+      broadcastCaption('', false);
       if (options?.onError) options.onError(e);
       else if (options?.onEnd) options.onEnd();
     };
@@ -224,6 +227,36 @@ export function speakWithBrowserFallback(
     window.speechSynthesis.speak(utterance);
   } catch (err) {
     console.error('Failed to speak via SpeechSynthesis:', err);
+    broadcastCaption('', false);
     if (options?.onError) options.onError(err);
   }
 }
+
+// =========================================================================
+// Live Closed Captions (Subtitles) for Deaf & Hard-of-Hearing Users
+// =========================================================================
+
+export type CaptionEvent = {
+  text: string;
+  speaker?: string;
+  active: boolean;
+};
+
+type CaptionListener = (event: CaptionEvent) => void;
+const captionListeners: Set<CaptionListener> = new Set();
+
+export function addCaptionListener(listener: CaptionListener): () => void {
+  captionListeners.add(listener);
+  return () => {
+    captionListeners.delete(listener);
+  };
+}
+
+export function broadcastCaption(text: string, active: boolean, speaker: string = 'Atlas Narrator'): void {
+  captionListeners.forEach((l) => {
+    try {
+      l({ text, active, speaker });
+    } catch {}
+  });
+}
+

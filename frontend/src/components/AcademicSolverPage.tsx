@@ -34,6 +34,11 @@ import {
   Palette,
   Wifi,
   WifiOff,
+  Captions,
+  Ear,
+  Eye,
+  Brain,
+  Sliders,
 } from 'lucide-react';
 import type { User, ItemStats, FlashcardItem, LearningActivity, ActivityType, DailyVoiceTopic } from '../types';
 import { api, logLearningActivity, loadAllLearningActivities } from '../api';
@@ -45,11 +50,18 @@ import {
 } from '../utils/userStorage';
 import { IndicVirtualKeyboard, type IndicLanguage } from './IndicVirtualKeyboard';
 import { VoiceAccessModal } from './VoiceAccessModal';
-import { playVoiceAccessChime } from '../utils/soundEffects';
+import {
+  playVoiceAccessChime,
+  playEarcon,
+  addSoundAlertListener,
+  type SoundAlertInfo,
+} from '../utils/soundEffects';
 import {
   preUnlockAudio,
   cleanTextForSpeech,
   speakWithBrowserFallback,
+  addCaptionListener,
+  type CaptionEvent,
 } from '../utils/speechUtils';
 import { ImageScanner } from './ImageScanner';
 import { PdfScanner } from './PdfScanner';
@@ -278,6 +290,36 @@ export function AcademicSolverPage({
       themeAmberTitle: 'Warm Amber',
       themeAmberDesc: 'Cozy golden sepia for late-night reading',
       themeActiveBadge: 'ACTIVE',
+      a11yCenterTitle: 'Universal Accessibility Center (Disability Suites)',
+      a11yCenterSubtitle: 'Tailored sensory, motor, auditory, and neurodiverse accessibility features',
+      suiteVisualTitle: '1. Visually Impaired & Blind Access',
+      suiteVisualDesc: 'Audio Earcon sound cues, live ARIA announcements, and spoken step descriptions',
+      earconsToggleTitle: 'Audio Earcons (Procedural Sound Cues)',
+      earconsToggleDesc: 'Auditory confirmation pings for focus, selection, navigation, and error states without sight',
+      audioDescToggleTitle: 'Spoken Math & Formula Descriptions',
+      audioDescToggleDesc: 'Speaks mathematical structures, equation transformations, and visual chart summaries',
+      suiteMotorTitle: '2. Motor & Mobility Impairment Access',
+      suiteMotorDesc: 'Single-switch auto-scanning navigation, hands-free voice control, and shortcuts',
+      switchAccessToggleTitle: 'Auto-Scanning Switch Access',
+      switchAccessToggleDesc: 'Navigate the entire interface using single switch, Space, Enter, or foot pedal',
+      switchSpeedTitle: 'Switch Scanning Cycle Speed',
+      suiteHearingTitle: '3. Hearing Impaired & Deaf Access',
+      suiteHearingDesc: 'Live Closed Captions subtitle dock and visual flashing sound alerts',
+      captionsToggleTitle: 'Live Closed Captions (Subtitles Dock)',
+      captionsToggleDesc: 'Displays floating subtitle bar with real-time text transcription and speaker badges',
+      captionsSizeTitle: 'Subtitle Dock Font Scale',
+      visualAlertsToggleTitle: 'Visual Sound Alerts & Border Glow',
+      visualAlertsToggleDesc: 'Flashes visual cues and icons when chimes, bells, or voice narrations play',
+      suiteCognitiveTitle: '4. Cognitive & Neurodiversity Suite (ADHD & Dyscalculia)',
+      suiteCognitiveDesc: 'Reading Focus Ruler, plain-language text simplifier, and math color coding',
+      readingRulerToggleTitle: 'Reading Focus Ruler Overlay',
+      readingRulerToggleDesc: 'Dims distracting areas and isolates current line to reduce cognitive overload',
+      dyscalculiaColorsToggleTitle: 'Dyscalculia Math Color-Coding',
+      dyscalculiaColorsToggleDesc: 'Distinct high-contrast colors for operators (+, -, ×), numbers (0-9), and variables (x, y)',
+      plainLangToggleTitle: 'Plain-Language Simplifier Mode',
+      plainLangToggleDesc: 'Converts complex academic terminology into concise, straightforward summaries',
+      a11yQuickPaletteTitle: 'Accessibility Quick Suite (Alt + A)',
+      closeBtn: 'Close',
     },
     Hindi: {
       appTitle: 'सुलभ शैक्षणिक समस्या समाधानकर्ता',
@@ -412,6 +454,36 @@ export function AcademicSolverPage({
       themeAmberTitle: 'वार्म एम्बर',
       themeAmberDesc: 'आरामदायक सेपिया और सुनहरा पठन मोड',
       themeActiveBadge: 'सक्रिय',
+      a11yCenterTitle: 'सार्वभौमिक पहुंच केंद्र (दिव्यांगता सुलभता)',
+      a11yCenterSubtitle: 'दृष्टि, गतिशीलता, श्रवण और न्यूरोडाइवर्स आवश्यकताओं के लिए विशेष सुविधाएं',
+      suiteVisualTitle: '1. दृष्टिबाधित और अंधता पहुंच (Visual Impairment)',
+      suiteVisualDesc: 'ऑडियो ईयरकॉन संकेत, लाइव एआरआईए घोषणाएं और गणितीय सूत्र वाचन',
+      earconsToggleTitle: 'ऑडियो ईयरकॉन (ध्वनि संकेत)',
+      earconsToggleDesc: 'बिना स्क्रीन देखे फोकस, चयन, नेविगेशन और त्रुटि की पुष्टि के लिए ध्वनि बीप',
+      audioDescToggleTitle: 'बोले जाने वाले गणित और आरेख विवरण',
+      audioDescToggleDesc: 'गणितीय चरणों, समीकरणों और आरेख सारांशों का स्वतः ध्वनि वाचन',
+      suiteMotorTitle: '2. गतिशीलता और मोटर विकलांगता (Motor & Mobility)',
+      suiteMotorDesc: 'सिंगल-स्विच ऑटो-स्कैनिंग, हैंड्स-फ्री वॉयस कंट्रोल और शॉर्टकट',
+      switchAccessToggleTitle: 'ऑटो-स्कैनिंग स्विच एक्सेस',
+      switchAccessToggleDesc: 'सिंगल स्विच, स्पेस, एंटर या फुट पैडल से पूरे ऐप में घूमें और चुनें',
+      switchSpeedTitle: 'स्विच स्कैन चक्र गति',
+      suiteHearingTitle: '3. श्रवण बाधित और बधिर पहुंच (Hearing Impairment)',
+      suiteHearingDesc: 'लाइव क्लोज्ड कैप्शन (सबटाइटल डॉक) और विज़ुअल साउंड अलर्ट',
+      captionsToggleTitle: 'लाइव क्लोज्ड कैप्शन (सबटाइटल डॉक)',
+      captionsToggleDesc: 'स्पीकर बैज के साथ स्क्रीन पर वास्तविक समय में उपशीर्षक पट्टी प्रदर्शित करें',
+      captionsSizeTitle: 'सबटाइटल फ़ॉन्ट आकार',
+      visualAlertsToggleTitle: 'विज़ुअल साउंड अलर्ट और बॉर्डर चमक',
+      visualAlertsToggleDesc: 'ध्वनि या भाषण बजने पर स्क्रीन पर दृश्य संकेत और चमक दिखाएं',
+      suiteCognitiveTitle: '4. संज्ञानात्मक और न्यूरोडाइवर्सिटी (ADHD और डिस्केल्कूलिया)',
+      suiteCognitiveDesc: 'रीडिंग फोकस रूलर, सरल भाषा सारांश और गणित रंग कोडिंग',
+      readingRulerToggleTitle: 'रीडिंग फोकस रूलर ओवरले',
+      readingRulerToggleDesc: 'विचलित करने वाले क्षेत्रों को धुंधला करके सक्रिय पंक्ति पर ध्यान केंद्रित करें',
+      dyscalculiaColorsToggleTitle: 'डिस्केल्कूलिया गणित रंग-कोडिंग',
+      dyscalculiaColorsToggleDesc: 'ऑपरेटरों (+, -, ×), संख्याओं और चरों के लिए अलग-अलग उच्च-कंट्रास्ट रंग',
+      plainLangToggleTitle: 'सरल भाषा मोड',
+      plainLangToggleDesc: 'कठिन शैक्षणिक शब्दावली को सरल और स्पष्ट शब्दों में संक्षेप में प्रस्तुत करें',
+      a11yQuickPaletteTitle: 'त्वरित पहुंच पैलेट (Alt + A)',
+      closeBtn: 'बंद करें',
     },
     Odia: {
       appTitle: 'ସୁଗମ ଶିକ୍ଷାଗତ ସମସ୍ୟା ସମାଧାନକାରୀ',
@@ -546,6 +618,36 @@ export function AcademicSolverPage({
       themeAmberTitle: 'ୱାର୍ମ ଆମ୍ବର',
       themeAmberDesc: 'ଆରାମଦାୟକ ସୁନେଲି ସେପିଆ ପଠନ ମୋଡ୍',
       themeActiveBadge: 'ସକ୍ରିୟ',
+      a11yCenterTitle: 'ସାର୍ବଜନୀନ ସୁଗମତା କେନ୍ଦ୍ର (ଦିବ୍ୟାଙ୍ଗ ସୁବିଧା ସମୂହ)',
+      a11yCenterSubtitle: 'ଦୃଷ୍ଟି, ଶ୍ରବଣ, ଚଳନଶକ୍ତି ଏବଂ ମାନସିକ ସ୍ୱଚ୍ଛତା ପାଇଁ ସ୍ୱତନ୍ତ୍ର ସୁଗମତା ବ୍ୟବସ୍ଥା',
+      suiteVisualTitle: '୧. ଦୃଷ୍ଟିହୀନ ଓ ଦୃଷ୍ଟିଦୋଷ ସହାୟତା (Visual Impairment)',
+      suiteVisualDesc: 'ଅଡିଓ ଇୟରକନ୍ ଧ୍ୱନି ସଙ୍କେତ, ARIA ଘୋଷଣା ଏବଂ ଗଣିତ ପଦକ୍ଷେପ ବର୍ଣ୍ଣନା',
+      earconsToggleTitle: 'ଅଡିଓ ଇୟରକନ୍ (ପ୍ରୋସିଜୁରାଲ୍ ଧ୍ୱନି ସଙ୍କେତ)',
+      earconsToggleDesc: 'ସ୍କ୍ରିନ୍ ନଦେଖି ଫୋକସ୍, ଚୟନ, ନେଭିଗେସନ୍ ଓ ଭୁଲ୍ ଜାଣିବା ପାଇଁ ଶ୍ରାବ୍ୟ ଧ୍ୱନି',
+      audioDescToggleTitle: 'ଗଣିତ ସୂତ୍ର ଓ ଚିତ୍ରର ମୌଖିକ ବର୍ଣ୍ଣନା',
+      audioDescToggleDesc: 'ଗାଣିତିକ ପଦକ୍ଷେପ, ସମୀକରଣ ରୂପାନ୍ତରଣ ଏବଂ ଚାର୍ଟ ସାରାଂଶକୁ ପଢ଼ି ଶୁଣାଏ',
+      suiteMotorTitle: '୨. ଗତିଶୀଳତା ଓ ଚଳନଶକ୍ତି ଅକ୍ଷମତା ସହାୟତା (Motor & Mobility)',
+      suiteMotorDesc: 'ସିଙ୍ଗଲ୍-ସ୍ୱିଚ୍ ଅଟୋ-ସ୍କାନିଂ, ହାତମୁକ୍ତ ଭଏସ୍ କମାଣ୍ଡ ଏବଂ କୀବୋର୍ଡ ଶର୍ଟକଟ୍',
+      switchAccessToggleTitle: 'ଅଟୋ-ସ୍କାନିଂ ସ୍ୱିଚ୍ ଆକ୍ସେସ୍ (Switch Access)',
+      switchAccessToggleDesc: 'ଗୋଟିଏ ସ୍ୱିଚ୍, ସ୍ପେସ୍, ଏଣ୍ଟର କିମ୍ବା ଫୁଟ୍ ପେଡାଲ୍ ସାହାଯ୍ୟରେ ସମ୍ପୂର୍ଣ୍ଣ ଆପ୍ ପରିଚାଳନା କରନ୍ତୁ',
+      switchSpeedTitle: 'ସ୍ୱିଚ୍ ସ୍କାନ୍ ଗତି ଚକ୍ର',
+      suiteHearingTitle: '୩. ଶ୍ରବଣହୀନ ଓ କାଲ ସହାୟତା (Hearing & Deaf Access)',
+      suiteHearingDesc: 'ଲାଇଭ୍ କ୍ଲୋଜ୍ଡ କ୍ୟାପ୍ସନ୍ (ସବଟାଇଟଲ୍ ଡକ୍) ଏବଂ ଭିଜୁଆଲ୍ ସାଉଣ୍ଡ ଆଲର୍ଟ',
+      captionsToggleTitle: 'ଲାଇଭ୍ କ୍ଲୋଜ୍ଡ କ୍ୟାପ୍ସନ୍ (ସବଟାଇଟଲ୍ ଡକ୍)',
+      captionsToggleDesc: 'ବକ୍ତା ପରିଚୟ ସହିତ ସ୍କ୍ରିନ୍ ତଳେ ରିଅଲ-ଟାଇମ୍ ସବଟାଇଟଲ୍ ବାର୍ ପ୍ରଦର୍ଶନ କରନ୍ତୁ',
+      captionsSizeTitle: 'ସବଟାଇଟଲ୍ ଫଣ୍ଟ ଆକାର',
+      visualAlertsToggleTitle: 'ଭିଜୁଆଲ୍ ସାଉଣ୍ଡ ଆଲର୍ଟ ଓ ବର୍ଡର ଫ୍ଲାସ୍',
+      visualAlertsToggleDesc: 'କୌଣସି ଶବ୍ଦ ବା ଭଏସ୍ ବାଜିଲେ ସ୍କ୍ରିନ୍ରେ ଆଲୋକ ଓ ସୂଚକ ଚିହ୍ନ ଝଲସିବ',
+      suiteCognitiveTitle: '୪. ଜ୍ଞାନଗତ ଓ ନ୍ୟୁରୋଡାଇଭର୍ସିଟି ସୁଇଟ୍ (ADHD ଓ ଡିସକାଲକୁଲିଆ)',
+      suiteCognitiveDesc: 'ରିଡିଂ ଫୋକସ୍ ରୁଲର୍, ସରଳ ଭାଷା ସାରାଂଶ ଏବଂ ଗଣିତ ରଙ୍ଗ-କୋଡିଂ',
+      readingRulerToggleTitle: 'ରିଡିଂ ଫୋକସ୍ ରୁଲର୍ ଓଭରଲେ (Reading Ruler)',
+      readingRulerToggleDesc: 'ଅନ୍ୟାନ୍ୟ ଅଂଶକୁ ଅନ୍ଧାର କରି କେବଳ ପଢ଼ୁଥିବା ଧାଡ଼ି ଉପରେ ଧ୍ୟାନ କେନ୍ଦ୍ରିତ କରନ୍ତୁ',
+      dyscalculiaColorsToggleTitle: 'ଡିସକାଲକୁଲିଆ ଗଣିତ ରଙ୍ଗ-କୋଡିଂ',
+      dyscalculiaColorsToggleDesc: 'ଗଣିତ ଚିହ୍ନ (+, -, ×), ସଂଖ୍ୟା (0-9) ଏବଂ ଚଳ (x, y) ପାଇଁ ସ୍ୱତନ୍ତ୍ର କଣ୍ଟ୍ରାଷ୍ଟ ରଙ୍ଗ',
+      plainLangToggleTitle: 'ସରଳ ଭାଷା ସଂକ୍ଷେପକାରୀ ମୋଡ୍',
+      plainLangToggleDesc: 'କଠିନ ଶିକ୍ଷାଗତ ଶବ୍ଦାବଳୀକୁ ସହଜ ଓ ବୁଝିପାରୁଥିବା ସାରାଂଶରେ ପରିଣତ କରନ୍ତୁ',
+      a11yQuickPaletteTitle: 'ସୁଗମତା କୁଇକ୍ ପ୍ୟାଲେଟ୍ (Alt + A)',
+      closeBtn: 'ବନ୍ଦ କରନ୍ତୁ',
     },
   };
 
@@ -1092,6 +1194,276 @@ Passage: (The 2-3 spoken sentences)`;
       document.documentElement.classList.remove('theme-high-contrast');
     }
   }, [highContrast]);
+
+  // =========================================================================
+  // 4 UNIVERSAL ACCESSIBILITY DISABILITY SUITES (State & Persistence)
+  // =========================================================================
+
+  // 1. Visually Impaired & Blind Access State
+  const [ariaAnnounce, setAriaAnnounce] = useState<string>('');
+  const [earconsEnabled, setEarconsEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('atlas_audio_earcons') !== 'false';
+  });
+  const [audioDescriptionsEnabled, setAudioDescriptionsEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('atlas_audio_descriptions') !== 'false';
+  });
+
+  const announceToScreenReader = (msg: string) => {
+    setAriaAnnounce(msg);
+  };
+
+  useEffect(() => {
+    localStorage.setItem('atlas_audio_earcons', String(earconsEnabled));
+  }, [earconsEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('atlas_audio_descriptions', String(audioDescriptionsEnabled));
+  }, [audioDescriptionsEnabled]);
+
+  // 2. Motor & Mobility Switch Access State
+  const [switchAccessEnabled, setSwitchAccessEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('atlas_switch_access') === 'true';
+  });
+  const [switchSpeed, setSwitchSpeed] = useState<number>(() => {
+    const s = localStorage.getItem('atlas_switch_speed');
+    return s ? parseFloat(s) : 2.0;
+  });
+  const [, setScannedIndex] = useState<number>(0);
+  const [switchPaused, setSwitchPaused] = useState<boolean>(false);
+
+  useEffect(() => {
+    localStorage.setItem('atlas_switch_access', String(switchAccessEnabled));
+  }, [switchAccessEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('atlas_switch_speed', String(switchSpeed));
+  }, [switchSpeed]);
+
+  // 3. Hearing Impaired & Deaf Access State (Closed Captions + Visual Sound Alerts)
+  const [closedCaptionsEnabled, setClosedCaptionsEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('atlas_closed_captions') !== 'false';
+  });
+  const [captionSize, setCaptionSize] = useState<'normal' | 'large' | 'xlarge'>(() => {
+    const s = localStorage.getItem('atlas_caption_size');
+    return s === 'large' || s === 'xlarge' ? s : 'normal';
+  });
+  const [currentCaption, setCurrentCaption] = useState<{ text: string; speaker: string; active: boolean }>({
+    text: '',
+    speaker: 'Atlas Voice',
+    active: false,
+  });
+
+  const [visualAlertsEnabled, setVisualAlertsEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('atlas_visual_sound_alerts') !== 'false';
+  });
+  const [activeSoundAlert, setActiveSoundAlert] = useState<SoundAlertInfo | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('atlas_closed_captions', String(closedCaptionsEnabled));
+  }, [closedCaptionsEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('atlas_caption_size', captionSize);
+  }, [captionSize]);
+
+  useEffect(() => {
+    localStorage.setItem('atlas_visual_sound_alerts', String(visualAlertsEnabled));
+  }, [visualAlertsEnabled]);
+
+  // Subscribe to Closed Captions events from TTS & Media
+  useEffect(() => {
+    const unsubscribe = addCaptionListener((evt: CaptionEvent) => {
+      if (evt.active && evt.text) {
+        setCurrentCaption({
+          text: evt.text,
+          speaker: evt.speaker || 'Atlas Voice',
+          active: true,
+        });
+      } else {
+        setCurrentCaption((prev) => ({ ...prev, active: false }));
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  // Subscribe to Visual Sound Alerts for Deaf / Hard of Hearing users
+  useEffect(() => {
+    const unsubscribe = addSoundAlertListener((alert: SoundAlertInfo) => {
+      if (visualAlertsEnabled) {
+        setActiveSoundAlert(alert);
+        // Also flash border subtly
+        document.documentElement.classList.add('sound-flash-active');
+        setTimeout(() => {
+          document.documentElement.classList.remove('sound-flash-active');
+        }, 1200);
+
+        const timer = setTimeout(() => {
+          setActiveSoundAlert((curr) => (curr?.id === alert.id ? null : curr));
+        }, 3800);
+        return () => clearTimeout(timer);
+      }
+    });
+    return unsubscribe;
+  }, [visualAlertsEnabled]);
+
+  // 4. Cognitive & Neurodiverse State (Reading Focus Ruler, Dyscalculia, Plain Language)
+  const [readingRulerEnabled, setReadingRulerEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('atlas_reading_ruler') === 'true';
+  });
+  const [rulerY, setRulerY] = useState<number>(220);
+
+  const [dyscalculiaColorsEnabled, setDyscalculiaColorsEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('atlas_dyscalculia_colors') === 'true';
+  });
+
+  const [plainLanguageMode, setPlainLanguageMode] = useState<boolean>(() => {
+    return localStorage.getItem('atlas_plain_language') === 'true';
+  });
+
+  // Quick Accessibility Palette Modal State
+  const [isA11yModalOpen, setIsA11yModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    localStorage.setItem('atlas_reading_ruler', String(readingRulerEnabled));
+  }, [readingRulerEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('atlas_dyscalculia_colors', String(dyscalculiaColorsEnabled));
+    if (dyscalculiaColorsEnabled) {
+      document.documentElement.classList.add('dyscalculia-math-colors');
+    } else {
+      document.documentElement.classList.remove('dyscalculia-math-colors');
+    }
+  }, [dyscalculiaColorsEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('atlas_plain_language', String(plainLanguageMode));
+  }, [plainLanguageMode]);
+
+  // Track cursor for Reading Focus Ruler
+  useEffect(() => {
+    if (!readingRulerEnabled) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setRulerY(e.clientY);
+    };
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [readingRulerEnabled]);
+
+  // Auto-Scanning Switch Access Interval Loop
+  useEffect(() => {
+    if (!switchAccessEnabled || switchPaused) {
+      document.querySelectorAll('.switch-scanned-target').forEach((el) => {
+        el.classList.remove('switch-scanned-target');
+      });
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      const candidates = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '.academic-nav-btn, .academic-feature-card, .btn-primary, .btn-action, .seg-btn, .btn-back-to-home, .theme-card-option, .btn-simplify-plain'
+        )
+      ).filter((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && el.offsetParent !== null;
+      });
+
+      if (candidates.length === 0) return;
+
+      setScannedIndex((prev) => {
+        const nextIdx = (prev + 1) % candidates.length;
+        candidates.forEach((c) => c.classList.remove('switch-scanned-target'));
+        const nextEl = candidates[nextIdx];
+        if (nextEl) {
+          nextEl.classList.add('switch-scanned-target');
+          nextEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          if (earconsEnabled) playEarcon('focus');
+        }
+        return nextIdx;
+      });
+    }, switchSpeed * 1000);
+
+    return () => {
+      clearInterval(intervalId);
+      document.querySelectorAll('.switch-scanned-target').forEach((el) => {
+        el.classList.remove('switch-scanned-target');
+      });
+    };
+  }, [switchAccessEnabled, switchPaused, switchSpeed, earconsEnabled]);
+
+  // Trigger click on currently scanned switch element
+  const handleSwitchTrigger = () => {
+    const activeEl = document.querySelector<HTMLElement>('.switch-scanned-target');
+    if (activeEl) {
+      if (earconsEnabled) playEarcon('select');
+      announceToScreenReader('Activated ' + (activeEl.innerText || 'Selected item'));
+      activeEl.click();
+    }
+  };
+
+  // Keyboard shortcut listener (Alt+A, Alt+C, Alt+S, Alt+R, Space for switch)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Alt + A: Open Accessibility Palette
+      if (e.altKey && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        setIsA11yModalOpen((prev) => !prev);
+        if (earconsEnabled) playEarcon('nav');
+        return;
+      }
+      // Alt + C: Toggle Closed Captions
+      if (e.altKey && (e.key === 'c' || e.key === 'C')) {
+        e.preventDefault();
+        setClosedCaptionsEnabled((prev) => {
+          const next = !prev;
+          announceToScreenReader(next ? 'Closed Captions Enabled' : 'Closed Captions Disabled');
+          return next;
+        });
+        if (earconsEnabled) playEarcon('select');
+        return;
+      }
+      // Alt + S: Toggle Switch Access
+      if (e.altKey && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        setSwitchAccessEnabled((prev) => {
+          const next = !prev;
+          announceToScreenReader(next ? 'Switch Access Enabled' : 'Switch Access Disabled');
+          return next;
+        });
+        if (earconsEnabled) playEarcon('select');
+        return;
+      }
+      // Alt + R: Toggle Reading Ruler
+      if (e.altKey && (e.key === 'r' || e.key === 'R')) {
+        e.preventDefault();
+        setReadingRulerEnabled((prev) => {
+          const next = !prev;
+          announceToScreenReader(next ? 'Reading Focus Ruler Enabled' : 'Reading Focus Ruler Disabled');
+          return next;
+        });
+        if (earconsEnabled) playEarcon('select');
+        return;
+      }
+      // Space for Switch Access Trigger (when not typing in form inputs)
+      if (switchAccessEnabled && e.code === 'Space') {
+        const isInput = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+        if (!isInput) {
+          e.preventDefault();
+          handleSwitchTrigger();
+          return;
+        }
+      }
+      // Escape closes a11y modal
+      if (e.key === 'Escape' && isA11yModalOpen) {
+        setIsA11yModalOpen(false);
+        if (earconsEnabled) playEarcon('focus');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [switchAccessEnabled, isA11yModalOpen, earconsEnabled]);
 
   // Learning History State
   const [activities, setActivities] = useState<LearningActivity[]>([]);
@@ -5061,6 +5433,295 @@ Passage: (The 2-3 spoken sentences)`;
                     <span>{t.clearAllHistoryBtn} ({activities.length})</span>
                   </button>
                 </div>
+
+                {/* ========================================================================= */}
+                {/* 4 UNIVERSAL ACCESSIBILITY DISABILITY SUITES                               */}
+                {/* ========================================================================= */}
+                <div style={{ marginTop: '1.75rem', marginBottom: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Sliders size={22} style={{ color: '#06b6d4' }} />
+                    <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700 }}>{t.a11yCenterTitle}</h3>
+                    <span className="badge-new-feature">Universal 1-4</span>
+                  </div>
+                  <p style={{ margin: '0.35rem 0 0 0', color: 'var(--text-secondary, #94a3b8)', fontSize: '0.92rem' }}>
+                    {t.a11yCenterSubtitle}
+                  </p>
+                </div>
+
+                {/* SUITE 1: Visually Impaired & Blind Access */}
+                <div className="disability-suite-card">
+                  <div className="suite-card-header">
+                    <div className="suite-card-icon-wrap" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
+                      <Eye size={22} />
+                    </div>
+                    <div>
+                      <h4 className="suite-card-title">{t.suiteVisualTitle}</h4>
+                      <p className="suite-card-desc">{t.suiteVisualDesc}</p>
+                    </div>
+                  </div>
+
+                  <div className="suite-controls-grid">
+                    <div className="settings-row" style={{ padding: '0.6rem 0' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.earconsToggleTitle}</h5>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>{t.earconsToggleDesc}</p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn-a11y-pill-test"
+                          onClick={() => playEarcon('select')}
+                          title="Test Earcon sound ping"
+                        >
+                          🔊 Test Earcon
+                        </button>
+                        <label className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={earconsEnabled}
+                            onChange={(e) => {
+                              const val = e.target.checked;
+                              setEarconsEnabled(val);
+                              if (val) playEarcon('success');
+                            }}
+                          />
+                          <span className="slider round" />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="settings-row" style={{ padding: '0.6rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.audioDescToggleTitle}</h5>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>{t.audioDescToggleDesc}</p>
+                      </div>
+                      <label className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={audioDescriptionsEnabled}
+                          onChange={(e) => setAudioDescriptionsEnabled(e.target.checked)}
+                        />
+                        <span className="slider round" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SUITE 2: Motor & Mobility Impairment Access */}
+                <div className="disability-suite-card">
+                  <div className="suite-card-header">
+                    <div className="suite-card-icon-wrap" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>
+                      <Sliders size={22} />
+                    </div>
+                    <div>
+                      <h4 className="suite-card-title">{t.suiteMotorTitle}</h4>
+                      <p className="suite-card-desc">{t.suiteMotorDesc}</p>
+                    </div>
+                  </div>
+
+                  <div className="suite-controls-grid">
+                    <div className="settings-row" style={{ padding: '0.6rem 0' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.switchAccessToggleTitle}</h5>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>{t.switchAccessToggleDesc}</p>
+                      </div>
+                      <label className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={switchAccessEnabled}
+                          onChange={(e) => {
+                            const val = e.target.checked;
+                            setSwitchAccessEnabled(val);
+                            if (val && earconsEnabled) playEarcon('select');
+                          }}
+                        />
+                        <span className="slider round" />
+                      </label>
+                    </div>
+
+                    <div className="settings-row" style={{ padding: '0.6rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.switchSpeedTitle}</h5>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>Cycle duration between each interactive element</p>
+                      </div>
+                      <div className="segmented-picker">
+                        <button
+                          type="button"
+                          className={`seg-btn ${switchSpeed === 1.2 ? 'active' : ''}`}
+                          onClick={() => setSwitchSpeed(1.2)}
+                        >
+                          1.2s Fast
+                        </button>
+                        <button
+                          type="button"
+                          className={`seg-btn ${switchSpeed === 2.0 ? 'active' : ''}`}
+                          onClick={() => setSwitchSpeed(2.0)}
+                        >
+                          2.0s Normal
+                        </button>
+                        <button
+                          type="button"
+                          className={`seg-btn ${switchSpeed === 3.0 ? 'active' : ''}`}
+                          onClick={() => setSwitchSpeed(3.0)}
+                        >
+                          3.0s Relaxed
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SUITE 3: Hearing Impaired & Deaf Access */}
+                <div className="disability-suite-card">
+                  <div className="suite-card-header">
+                    <div className="suite-card-icon-wrap" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7' }}>
+                      <Ear size={22} />
+                    </div>
+                    <div>
+                      <h4 className="suite-card-title">{t.suiteHearingTitle}</h4>
+                      <p className="suite-card-desc">{t.suiteHearingDesc}</p>
+                    </div>
+                  </div>
+
+                  <div className="suite-controls-grid">
+                    <div className="settings-row" style={{ padding: '0.6rem 0' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.captionsToggleTitle}</h5>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>{t.captionsToggleDesc}</p>
+                      </div>
+                      <label className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={closedCaptionsEnabled}
+                          onChange={(e) => setClosedCaptionsEnabled(e.target.checked)}
+                        />
+                        <span className="slider round" />
+                      </label>
+                    </div>
+
+                    <div className="settings-row" style={{ padding: '0.6rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.captionsSizeTitle}</h5>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>Scale subtitle font size on the docked player</p>
+                      </div>
+                      <div className="segmented-picker">
+                        <button
+                          type="button"
+                          className={`seg-btn ${captionSize === 'normal' ? 'active' : ''}`}
+                          onClick={() => setCaptionSize('normal')}
+                        >
+                          Normal
+                        </button>
+                        <button
+                          type="button"
+                          className={`seg-btn ${captionSize === 'large' ? 'active' : ''}`}
+                          onClick={() => setCaptionSize('large')}
+                        >
+                          Large
+                        </button>
+                        <button
+                          type="button"
+                          className={`seg-btn ${captionSize === 'xlarge' ? 'active' : ''}`}
+                          onClick={() => setCaptionSize('xlarge')}
+                        >
+                          Extra Large
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="settings-row" style={{ padding: '0.6rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.visualAlertsToggleTitle}</h5>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>{t.visualAlertsToggleDesc}</p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn-a11y-pill-test"
+                          onClick={() => {
+                            setActiveSoundAlert({
+                              id: Date.now(),
+                              title: 'Visual Sound Alert Demo Triggered',
+                              icon: '⚡',
+                              timestamp: Date.now(),
+                            });
+                          }}
+                          title="Trigger a test visual sound alert badge"
+                        >
+                          👁️ Test Alert
+                        </button>
+                        <label className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={visualAlertsEnabled}
+                            onChange={(e) => setVisualAlertsEnabled(e.target.checked)}
+                          />
+                          <span className="slider round" />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SUITE 4: Cognitive & Neurodiversity Suite */}
+                <div className="disability-suite-card">
+                  <div className="suite-card-header">
+                    <div className="suite-card-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                      <Brain size={22} />
+                    </div>
+                    <div>
+                      <h4 className="suite-card-title">{t.suiteCognitiveTitle}</h4>
+                      <p className="suite-card-desc">{t.suiteCognitiveDesc}</p>
+                    </div>
+                  </div>
+
+                  <div className="suite-controls-grid">
+                    <div className="settings-row" style={{ padding: '0.6rem 0' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.readingRulerToggleTitle}</h5>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>{t.readingRulerToggleDesc} (Alt + R)</p>
+                      </div>
+                      <label className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={readingRulerEnabled}
+                          onChange={(e) => setReadingRulerEnabled(e.target.checked)}
+                        />
+                        <span className="slider round" />
+                      </label>
+                    </div>
+
+                    <div className="settings-row" style={{ padding: '0.6rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.dyscalculiaColorsToggleTitle}</h5>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>{t.dyscalculiaColorsToggleDesc}</p>
+                      </div>
+                      <label className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={dyscalculiaColorsEnabled}
+                          onChange={(e) => setDyscalculiaColorsEnabled(e.target.checked)}
+                        />
+                        <span className="slider round" />
+                      </label>
+                    </div>
+
+                    <div className="settings-row" style={{ padding: '0.6rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div>
+                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.plainLangToggleTitle}</h5>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>{t.plainLangToggleDesc}</p>
+                      </div>
+                      <label className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={plainLanguageMode}
+                          onChange={(e) => setPlainLanguageMode(e.target.checked)}
+                        />
+                        <span className="slider round" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -5140,6 +5801,327 @@ Passage: (The 2-3 spoken sentences)`;
         isOpen={isDownloadModalOpen}
         onClose={() => setIsDownloadModalOpen(false)}
       />
+
+      {/* ========================================================================= */}
+      {/* 4 UNIVERSAL ACCESSIBILITY DISABILITY SUITES (Persistent UI Overlays)      */}
+      {/* ========================================================================= */}
+
+      {/* 1. ARIA Live Announcement Region for Screen Readers */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {ariaAnnounce}
+      </div>
+
+      {/* 2. Visual Sound Alert Badge (for Deaf & Hard of Hearing) */}
+      {visualAlertsEnabled && activeSoundAlert && (
+        <div className="visual-sound-alert-badge" role="alert" aria-live="assertive">
+          <span className="visual-sound-icon">{activeSoundAlert.icon}</span>
+          <span className="visual-sound-text">{activeSoundAlert.title}</span>
+        </div>
+      )}
+
+      {/* 3. Reading Focus Ruler Overlay (for Cognitive, ADHD & Autism) */}
+      {readingRulerEnabled && (
+        <div className="reading-focus-ruler-overlay" aria-hidden="true">
+          <div className="ruler-mask-top" style={{ height: Math.max(0, rulerY - 36) }} />
+          <div className="ruler-focus-window" style={{ top: Math.max(0, rulerY - 36), height: 72 }} />
+          <div className="ruler-mask-bottom" style={{ top: Math.max(0, rulerY + 36) }} />
+        </div>
+      )}
+
+      {/* 4. Live Closed Captions (Subtitles) Dock (for Deaf & Hard of Hearing) */}
+      {closedCaptionsEnabled && (
+        <div
+          className={`atlas-closed-captions-dock caption-size-${captionSize} ${currentCaption.active ? 'active' : ''}`}
+          role="region"
+          aria-label="Closed Captions Subtitles"
+        >
+          <div className="caption-content">
+            <span className="caption-badge">CC</span>
+            <span className="caption-speaker">{currentCaption.speaker}:</span>
+            <span className="caption-text">
+              {currentCaption.text ||
+                (selectedLanguage === 'Odia'
+                  ? 'ସ୍ପଷ୍ଟ ଧ୍ୱନି ବା ବାର୍ତ୍ତାଳାପକୁ ଅପେକ୍ଷା କରାଯାଉଛି...'
+                  : selectedLanguage === 'Hindi'
+                  ? 'भाषण या मीडिया की प्रतीक्षा है...'
+                  : 'Listening for speech or media...')}
+            </span>
+          </div>
+          <div className="caption-controls">
+            <button
+              type="button"
+              className={`btn-caption-size ${captionSize === 'normal' ? 'active' : ''}`}
+              onClick={() => setCaptionSize('normal')}
+              title="Normal Font Scale"
+            >
+              A
+            </button>
+            <button
+              type="button"
+              className={`btn-caption-size ${captionSize === 'large' ? 'active' : ''}`}
+              onClick={() => setCaptionSize('large')}
+              title="Large Font Scale"
+            >
+              A+
+            </button>
+            <button
+              type="button"
+              className={`btn-caption-size ${captionSize === 'xlarge' ? 'active' : ''}`}
+              onClick={() => setCaptionSize('xlarge')}
+              title="Extra Large Font Scale"
+            >
+              A++
+            </button>
+            <button
+              type="button"
+              className="btn-caption-close"
+              onClick={() => setCurrentCaption((prev) => ({ ...prev, active: false }))}
+              title="Clear current subtitle"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Motor Switch Access Floating Status & Control Bar */}
+      {switchAccessEnabled && (
+        <div className="switch-access-status-bar" role="toolbar" aria-label="Switch Access Control Bar">
+          <div className="switch-status-info">
+            <Sliders size={16} className="switch-pulse-icon" />
+            <span>
+              Switch Scanning: <strong>{switchSpeed}s</strong> (Press Space or Enter to Click)
+            </span>
+          </div>
+          <div className="switch-actions">
+            <button
+              type="button"
+              className="btn-switch-trigger"
+              onClick={handleSwitchTrigger}
+              title="Trigger currently highlighted element"
+            >
+              👆 Click Now (Space)
+            </button>
+            <button
+              type="button"
+              className="btn-switch-toggle"
+              onClick={() => setSwitchPaused((p) => !p)}
+            >
+              {switchPaused ? '▶️ Resume Scan' : '⏸️ Pause Scan'}
+            </button>
+            <button
+              type="button"
+              className="btn-switch-close"
+              onClick={() => setSwitchAccessEnabled(false)}
+              title="Exit Switch Access"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Floating Universal Accessibility Suite Button (Alt + A) */}
+      <button
+        type="button"
+        className="btn-floating-a11y"
+        onClick={() => {
+          setIsA11yModalOpen(true);
+          if (earconsEnabled) playEarcon('nav');
+        }}
+        title="Universal Accessibility Suite (Alt + A)"
+        aria-haspopup="dialog"
+      >
+        <Sliders size={16} />
+        <span>A11y</span>
+        <span className="a11y-kbd-chip">Alt+A</span>
+      </button>
+
+      {/* 7. Quick Accessibility Palette Modal */}
+      {isA11yModalOpen && (
+        <div
+          className="a11y-quick-palette-backdrop"
+          onClick={() => setIsA11yModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t.a11yQuickPaletteTitle}
+        >
+          <div
+            className="a11y-quick-palette-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="a11y-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Sliders size={20} style={{ color: '#06b6d4' }} />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
+                  {t.a11yQuickPaletteTitle}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="btn-a11y-modal-close"
+                onClick={() => setIsA11yModalOpen(false)}
+                aria-label={t.closeBtn}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ margin: '0.4rem 0 1rem 0', color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
+              Instant one-click toggles for sensory, mobility, and cognitive accessibility suites.
+            </p>
+
+            <div className="a11y-quick-toggles-grid">
+              {/* Feature 1: Blind & Audio Earcons */}
+              <div className="a11y-quick-tile">
+                <div className="quick-tile-info">
+                  <div className="quick-tile-icon" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
+                    <Eye size={18} />
+                  </div>
+                  <div>
+                    <h5 style={{ margin: 0 }}>Audio Earcon Pings</h5>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Sound cues for navigation</span>
+                  </div>
+                </div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={earconsEnabled}
+                    onChange={(e) => {
+                      const v = e.target.checked;
+                      setEarconsEnabled(v);
+                      if (v) playEarcon('success');
+                    }}
+                  />
+                  <span className="slider round" />
+                </label>
+              </div>
+
+              {/* Feature 2: Switch Access Scanning */}
+              <div className="a11y-quick-tile">
+                <div className="quick-tile-info">
+                  <div className="quick-tile-icon" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>
+                    <Sliders size={18} />
+                  </div>
+                  <div>
+                    <h5 style={{ margin: 0 }}>Switch Auto-Scan</h5>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Space / Enter Navigation (Alt+S)</span>
+                  </div>
+                </div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={switchAccessEnabled}
+                    onChange={(e) => {
+                      const v = e.target.checked;
+                      setSwitchAccessEnabled(v);
+                      if (v && earconsEnabled) playEarcon('select');
+                    }}
+                  />
+                  <span className="slider round" />
+                </label>
+              </div>
+
+              {/* Feature 3: Closed Captions Subtitles */}
+              <div className="a11y-quick-tile">
+                <div className="quick-tile-info">
+                  <div className="quick-tile-icon" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7' }}>
+                    <Captions size={18} />
+                  </div>
+                  <div>
+                    <h5 style={{ margin: 0 }}>Closed Captions Dock</h5>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Real-time subtitles (Alt+C)</span>
+                  </div>
+                </div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={closedCaptionsEnabled}
+                    onChange={(e) => setClosedCaptionsEnabled(e.target.checked)}
+                  />
+                  <span className="slider round" />
+                </label>
+              </div>
+
+              {/* Feature 3B: Visual Sound Alerts */}
+              <div className="a11y-quick-tile">
+                <div className="quick-tile-info">
+                  <div className="quick-tile-icon" style={{ background: 'rgba(236, 72, 153, 0.15)', color: '#ec4899' }}>
+                    <Ear size={18} />
+                  </div>
+                  <div>
+                    <h5 style={{ margin: 0 }}>Visual Sound Alerts</h5>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Flash alerts when sound plays</span>
+                  </div>
+                </div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={visualAlertsEnabled}
+                    onChange={(e) => setVisualAlertsEnabled(e.target.checked)}
+                  />
+                  <span className="slider round" />
+                </label>
+              </div>
+
+              {/* Feature 4: Reading Focus Ruler */}
+              <div className="a11y-quick-tile">
+                <div className="quick-tile-info">
+                  <div className="quick-tile-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                    <Brain size={18} />
+                  </div>
+                  <div>
+                    <h5 style={{ margin: 0 }}>Reading Focus Ruler</h5>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Dim distractors, follow cursor (Alt+R)</span>
+                  </div>
+                </div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={readingRulerEnabled}
+                    onChange={(e) => setReadingRulerEnabled(e.target.checked)}
+                  />
+                  <span className="slider round" />
+                </label>
+              </div>
+
+              {/* Feature 4B: Dyscalculia Math Colors */}
+              <div className="a11y-quick-tile">
+                <div className="quick-tile-info">
+                  <div className="quick-tile-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
+                    <Sparkles size={18} />
+                  </div>
+                  <div>
+                    <h5 style={{ margin: 0 }}>Dyscalculia Colors</h5>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Color-code numbers & symbols</span>
+                  </div>
+                </div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={dyscalculiaColorsEnabled}
+                    onChange={(e) => setDyscalculiaColorsEnabled(e.target.checked)}
+                  />
+                  <span className="slider round" />
+                </label>
+              </div>
+            </div>
+
+            <div className="a11y-modal-footer">
+              <button
+                type="button"
+                className="btn-a11y-open-settings"
+                onClick={() => {
+                  setIsA11yModalOpen(false);
+                  setActiveTab('settings');
+                }}
+              >
+                ⚙️ Open Full Accessibility Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

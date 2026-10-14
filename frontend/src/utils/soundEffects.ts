@@ -77,7 +77,7 @@ export function playWelcomeSound(): void {
     bellGain.connect(ctx.destination);
     bellOsc.start(now);
     bellOsc.stop(now + 0.8);
-
+    notifySound('Celebratory Welcome Chime', '🎵');
   } catch (err) {
     console.warn('Welcome sound synthesis error (safe fallback):', err);
   }
@@ -108,6 +108,7 @@ export function playSuccessChime(): void {
 
     osc.start(now);
     osc.stop(now + 0.35);
+    notifySound('Success Audio Tone', '✨');
   } catch (err) {
     console.warn('Audio chime error:', err);
   }
@@ -153,6 +154,7 @@ export function playVoiceAccessChime(): void {
     gain2.connect(ctx.destination);
     osc2.start(now + 0.03);
     osc2.stop(now + 0.34);
+    notifySound('Voice Input Activated', '🎙️');
   } catch (err) {
     console.warn('Voice access chime synthesis error:', err);
   }
@@ -184,7 +186,122 @@ export function speakWelcomeGreeting(userName: string): void {
     if (naturalVoice) utterance.voice = naturalVoice;
 
     window.speechSynthesis.speak(utterance);
+    notifySound('Spoken Voice Greeting', '🗣️');
   } catch (err) {
     console.warn('Speech greeting error:', err);
   }
 }
+
+// =========================================================================
+// Visual Sound Alerts for Deaf & Hard-of-Hearing Users
+// =========================================================================
+
+export type SoundAlertInfo = {
+  id: number;
+  title: string;
+  icon: string;
+  timestamp: number;
+};
+
+type SoundAlertListener = (alert: SoundAlertInfo) => void;
+const soundListeners: Set<SoundAlertListener> = new Set();
+
+export function addSoundAlertListener(listener: SoundAlertListener): () => void {
+  soundListeners.add(listener);
+  return () => {
+    soundListeners.delete(listener);
+  };
+}
+
+export function notifySound(title: string, icon: string = '🔔'): void {
+  const alert: SoundAlertInfo = {
+    id: Date.now() + Math.random(),
+    title,
+    icon,
+    timestamp: Date.now(),
+  };
+  soundListeners.forEach((l) => {
+    try {
+      l(alert);
+    } catch {}
+  });
+}
+
+// =========================================================================
+// Audio Earcons (Sound Cues for Blind & Visually Impaired Users)
+// =========================================================================
+
+export type EarconType = 'focus' | 'select' | 'nav' | 'error' | 'success' | 'alert';
+
+/**
+ * Plays short, distinct non-verbal procedural sound cues (Earcons)
+ * to confirm focus, navigation, selection, and error states without screen sight.
+ */
+export function playEarcon(type: EarconType): void {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    if (type === 'focus') {
+      // Soft short ping (440Hz -> 500Hz, 35ms)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.linearRampToValueAtTime(520, now + 0.035);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.035);
+    } else if (type === 'select') {
+      // Crisp confirmation pop (600Hz -> 950Hz, 60ms)
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(950, now + 0.06);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.06);
+      notifySound('Button / Switch Selected', '👆');
+    } else if (type === 'nav') {
+      // Upward navigational chirp (480Hz -> 720Hz, 80ms)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(480, now);
+      osc.frequency.exponentialRampToValueAtTime(720, now + 0.08);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.08);
+      notifySound('Navigation Switched', '🧭');
+    } else if (type === 'error') {
+      // Dual-tone low warning (360Hz -> 240Hz, 150ms)
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(360, now);
+      osc.frequency.exponentialRampToValueAtTime(240, now + 0.15);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.10, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+      notifySound('Accessibility Alert / Error', '⚠️');
+    } else if (type === 'success') {
+      playSuccessChime();
+    }
+  } catch (err) {
+    console.warn('Earcon audio synthesis error:', err);
+  }
+}
+
