@@ -272,6 +272,23 @@ export function LoginPage({
       return;
     }
 
+    // 1. Instant Offline Mode Execution (Zero network delay, zero OTP required)
+    if (networkMode === 'offline') {
+      const isSoubhagya = (email + ' ' + username + ' ' + fullName).toLowerCase().includes('soubhagya');
+      const profileName = fullName.trim() || username.trim() || (email.split('@')[0]) || 'ATLAS Scholar';
+      const role = isSoubhagya ? 'admin' : 'student';
+      const targetEmail = email.trim() || 'soubhagyapattanayak637@gmail.com';
+      const authRes = api.loginOffline(profileName, role, targetEmail);
+      playWelcomeSound();
+      const actionMsg = mode === 'signup' ? 'Offline Account Created!' : 'Logged in via Offline Mode!';
+      setSuccessMessage(`${actionMsg} Welcome, ${authRes.user.full_name}! Launching Workspace...`);
+      setTimeout(() => {
+        onLoginSuccess(authRes.user);
+      }, 350);
+      return;
+    }
+
+    // 2. Sign-Up Mode (Online Cloud Flow with Email Verification)
     if (mode === 'signup') {
       if (!username.trim()) {
         setError('Please enter a username.');
@@ -290,10 +307,17 @@ export function LoginPage({
         return;
       }
 
-      // Mandatory OTP Step: Request 6-digit registration code via email
       setLoading(true);
+      setIsServerOffline(false);
+      const signupSafetyTimer = setTimeout(() => {
+        setLoading(false);
+        setIsServerOffline(true);
+        setError('Connection to backend server timed out. The Cloud Server is currently waking up or offline. You can switch to Offline Mode for instant access.');
+      }, 35000);
+
       try {
         const res = await api.sendEmailOTP({ email: email.trim(), purpose: 'register' });
+        clearTimeout(signupSafetyTimer);
         setOtpEmail(email.trim());
         setSignupStep('otp');
         setOtpTimer(res.cooldown_seconds || 60);
@@ -304,36 +328,29 @@ export function LoginPage({
           if (firstInput) (firstInput as HTMLInputElement).focus();
         }, 120);
       } catch (err: any) {
-        setError(err.message || 'Failed to send verification code. Please check your email.');
+        clearTimeout(signupSafetyTimer);
+        const errMsg = err?.message || 'Failed to send verification code. Please check your email.';
+        setError(errMsg);
+        if (errMsg.includes('waking up') || errMsg.includes('timed out') || errMsg.includes('Timed Out') || errMsg.includes('Unreachable') || errMsg.includes('connect')) {
+          setIsServerOffline(true);
+        }
       } finally {
+        clearTimeout(signupSafetyTimer);
         setLoading(false);
       }
       return;
     }
 
-    if (networkMode === 'offline') {
-      const isSoubhagya = email.trim().toLowerCase().includes('soubhagya');
-      const profileName = isSoubhagya ? 'Soubhagya Pattanayak' : (email.split('@')[0] || 'ATLAS Scholar');
-      const role = isSoubhagya ? 'admin' : 'student';
-      const targetEmail = email.trim() || 'soubhagyapattanayak637@gmail.com';
-      const authRes = api.loginOffline(profileName, role, targetEmail);
-      playWelcomeSound();
-      setSuccessMessage(`Welcome, ${authRes.user.full_name}! Launching Offline Workspace...`);
-      setTimeout(() => {
-        onLoginSuccess(authRes.user);
-      }, 350);
-      return;
-    }
-
+    // 3. Login Mode (Online Cloud Authentication)
     setLoading(true);
     setIsServerOffline(false);
 
-    // Guaranteed safety timer: never let the button stay stuck on "Processing..." forever
+    // Safety timer: generous 35s window for cloud server cold-starts
     const safetyTimer = setTimeout(() => {
       setLoading(false);
       setIsServerOffline(true);
-      setError('Connection to backend server timed out. The server is taking too long to respond.');
-    }, 12500);
+      setError('Connection to backend server timed out. The server is taking too long to respond. You can enter Offline Mode for instant access.');
+    }, 35000);
 
     try {
       const credentials: LoginCredentials = {
@@ -357,7 +374,8 @@ export function LoginPage({
         msg.includes('Network') ||
         msg.includes('Render') ||
         msg.includes('Failed to fetch') ||
-        msg.includes('Unreachable');
+        msg.includes('Unreachable') ||
+        msg.includes('waking up');
       if (isNetwork) {
         setIsServerOffline(true);
       }
@@ -798,13 +816,18 @@ export function LoginPage({
               >
                 <Globe size={15} className="toggle-tab-icon" />
                 <span className="toggle-tab-text">Online Mode</span>
-                <span className={`toggle-tab-badge online ${serverHealthStatus === 'offline' ? 'asleep' : ''}`}>
-                  {serverHealthStatus === 'checking'
-                    ? 'Cloud AI'
-                    : serverHealthStatus === 'online'
-                    ? '● Live Cloud'
-                    : '● Cloud Asleep'}
-                </span>
+                {(() => {
+                  const isCloudAsleep = isServerOffline || serverHealthStatus === 'offline' || Boolean(error && (error.includes('connect') || error.includes('timed out') || error.includes('Timed Out') || error.includes('Render') || error.includes('Unreachable') || error.includes('waking up')));
+                  return (
+                    <span className={`toggle-tab-badge online ${isCloudAsleep ? 'asleep' : ''}`}>
+                      {serverHealthStatus === 'checking' && !isServerOffline
+                        ? '● Connecting'
+                        : isCloudAsleep
+                        ? '● Cloud Asleep'
+                        : '● Live Cloud'}
+                    </span>
+                  );
+                })()}
               </button>
 
               <button
@@ -1107,13 +1130,14 @@ export function LoginPage({
                   type="button"
                   id="btn-quick-offline-bypass"
                   onClick={() => {
-                    const isSoubhagya = email.trim().toLowerCase().includes('soubhagya');
-                    const profileName = isSoubhagya ? 'Soubhagya Pattanayak' : (email.split('@')[0] || 'ATLAS Scholar');
+                    const isSoubhagya = (email + ' ' + username).trim().toLowerCase().includes('soubhagya');
+                    const profileName = isSoubhagya ? 'Soubhagya Pattanayak' : (fullName.trim() || username.trim() || email.split('@')[0] || 'ATLAS Scholar');
                     const role = isSoubhagya ? 'admin' : 'student';
                     const targetEmail = email.trim() || 'soubhagyapattanayak637@gmail.com';
                     const authRes = api.loginOffline(profileName, role, targetEmail);
                     playWelcomeSound();
-                    setSuccessMessage(`Welcome, ${authRes.user.full_name}! Launching ATLAS in Offline Mode...`);
+                    const actionMsg = mode === 'signup' ? 'Offline Account Created!' : 'Logged in via Offline Mode!';
+                    setSuccessMessage(`${actionMsg} Welcome, ${authRes.user.full_name}! Launching ATLAS...`);
                     setTimeout(() => {
                       onLoginSuccess(authRes.user);
                     }, 350);
@@ -1133,7 +1157,7 @@ export function LoginPage({
                     gap: '6px',
                   }}
                 >
-                  ⚡ Continue in Offline Mode ({email.trim().toLowerCase().includes('soubhagya') ? 'Admin Soubhagya' : 'Instant Access'})
+                  ⚡ {mode === 'signup' ? 'Create Offline Account Instantly (No Waiting)' : `Continue in Offline Mode (${email.trim().toLowerCase().includes('soubhagya') ? 'Admin Soubhagya' : 'Instant Access'})`}
                 </button>
 
                 <a

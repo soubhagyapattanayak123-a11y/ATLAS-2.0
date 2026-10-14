@@ -66,15 +66,15 @@ def normalize_odia_text(text: str) -> str:
     cleaned = re.sub(r'[\u0D80-\u0DFF\u0B80-\u0BFF\u0D00-\u0D7F\u0C00-\u0C7F\u0C80-\u0CFF\u0A80-\u0AFF]', '', cleaned)
     return cleaned
 
-def call_openrouter(messages: List[Dict[str, str]], max_tokens: int = 500, temperature: float = 0.3) -> str:
+def call_openrouter(messages: List[Dict[str, str]], max_tokens: int = 700, temperature: float = 0.3) -> str:
     models = [
+        "openai/gpt-4o-mini",
         "deepseek/deepseek-chat",
         "qwen/qwen-2.5-72b-instruct",
         "meta-llama/llama-3.3-70b-instruct",
-        "liquid/lfm-2.5-2.6b:free",
-        "google/gemma-4-26b-a4b-it:free",
-        "nvidia/nemotron-3.5-lightning:free",
+        "mistralai/mistral-small-24b-instruct-2501",
     ]
+    api_key = os.getenv("OPENROUTER_API_KEY", OPENROUTER_API_KEY).strip()
     
     for model in models:
         payload = {
@@ -87,14 +87,14 @@ def call_openrouter(messages: List[Dict[str, str]], max_tokens: int = 500, tempe
             "https://openrouter.ai/api/v1/chat/completions",
             data=json.dumps(payload).encode("utf-8"),
             headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:5173",
                 "X-Title": "ATLAS 2.0 Academic AI Tutor",
             },
         )
         try:
-            with safe_urlopen(req, timeout=25) as resp:
+            with safe_urlopen(req, timeout=18) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 choice = data.get("choices", [{}])[0]
                 content = choice.get("message", {}).get("content", "").strip()

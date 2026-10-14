@@ -946,7 +946,8 @@ export function askQuestionOffline(question: string, language: string = 'English
   const isHindi = ['hindi', 'hi', 'hi-in'].includes(language.toLowerCase());
   const qLower = question.toLowerCase();
 
-  if (qLower.includes('newton') || qLower.includes('motion') || qLower.includes('gravity')) {
+  // 1. Newton's Laws & Mechanics
+  if (qLower.includes('newton') || qLower.includes('motion') || qLower.includes('gravity') || qLower.includes('gravitat')) {
     if (isOdia) {
       return (
         "ପଦକ୍ଷେପ ୧ (ସଂଜ୍ଞା ଓ ମୂଳ ଧାରଣା): ନ୍ୟୁଟନଙ୍କ ଗତି ନିୟମ ବସ୍ତୁର ଗତି ଏବଂ ବଳ ମଧ୍ୟରେ ଥିବା ସମ୍ପର୍କ ବ୍ୟାଖ୍ୟା କରେ (F = ma)।\n\n" +
@@ -971,7 +972,8 @@ export function askQuestionOffline(question: string, language: string = 'English
     }
   }
 
-  if (qLower.includes('photosynthesis') || qLower.includes('photo') || qLower.includes('plant')) {
+  // 2. Photosynthesis & Botany
+  if (qLower.includes('photosynthesis') || qLower.includes('photo') || qLower.includes('plant') || qLower.includes('chlorophyll')) {
     if (isOdia) {
       return (
         "ପଦକ୍ଷେପ ୧ (ସଂଜ୍ଞା ଓ ମୂଳ ଧାରଣା): ଆଲୋକଶ୍ଳେଷଣ ହେଉଛି ଏକ ଜୈବ-ରାସାୟନିକ ପ୍ରକ୍ରିୟା ଯେଉଁଥିରେ ସବୁଜ ଉଦ୍ଭିଦ ସୂର୍ଯ୍ୟାଲୋକ ବ୍ୟବହାର କରି ଖାଦ୍ୟ ପ୍ରସ୍ତୁତ କରନ୍ତି।\n\n" +
@@ -992,6 +994,84 @@ export function askQuestionOffline(question: string, language: string = 'English
         "Step 2 (Scientific Mechanism / How it works): Chloroplasts utilize photons to synthesize CO2 and H2O into glucose and oxygen: 6CO2 + 6H2O + Light → C6H12O6 + 6O2.\n\n" +
         "Step 3 (Real-World Example): Phytoplankton in oceans produce over 50% of the planetary oxygen budget via photosynthesis.\n\n" +
         "Step 4 (Summary & Key Takeaway): Photosynthesis maintains Earth's atmospheric balance and powers the biosphere."
+      );
+    }
+  }
+
+  // 3. Electricity, Ohm's Law & Circuits
+  if (qLower.includes('ohm') || qLower.includes('electric') || qLower.includes('current') || qLower.includes('voltage') || qLower.includes('resistance')) {
+    if (isOdia) {
+      return (
+        "ପଦକ୍ଷେପ ୧ (ଓମ୍‌ଙ୍କ ନିୟମ): ସ୍ଥିର ତାପମାତ୍ରାରେ ଏକ ପରିବାହୀ ମଧ୍ୟଦେଇ ପ୍ରବାହିତ ବିଦ୍ୟୁତ୍ ସ୍ରୋତ (I) ତା'ର ଦୁଇ ପ୍ରାନ୍ତ ମଧ୍ୟରେ ଥିବା ବିଭବାନ୍ତର (V) ସହିତ ସମାନୁପାତୀ ହୁଏ (V = IR)।\n\n" +
+        "ପଦକ୍ଷେପ ୨ (ସୂତ୍ର ଓ ଏକକ): V = I × R, ଯେଉଁଠାରେ V = ଭୋଲ୍ଟ, I = ଆମ୍ପିୟର, ଏବଂ R = ପ୍ରତିରୋଧ (ଓମ୍ Ω)।\n\n" +
+        "ପଦକ୍ଷେପ ୩ (ବାସ୍ତବ ଉଦାହରଣ): ଘରୋଇ ବିଦ୍ୟୁତ ଉପକରଣ ଯଥା ହିଟର, ପଙ୍ଖା ଏବଂ ଟିଭିରେ ରେଜିଷ୍ଟର ମାଧ୍ୟମରେ କରେଣ୍ଟ ନିୟନ୍ତ୍ରଣ କରାଯାଏ।\n\n" +
+        "ପଦକ୍ଷେପ ୪ (ସାରାଂଶ): ଓମ୍‌ଙ୍କ ନିୟମ ସମସ୍ତ ଇଲେକ୍ଟ୍ରିକାଲ ଏବଂ ଇଲେକ୍ଟ୍ରୋନିକ୍ସ ସର୍କିଟ୍ ବିଶ୍ଳେଷଣର ପ୍ରାଥମିକ ନିୟମ ଅଟେ।"
+      );
+    } else if (isHindi) {
+      return (
+        "चरण 1 (ओम का नियम): स्थिर ताप पर किसी चालक तार से बहने वाली विद्युत धारा (I) उसके सिरों के विभवांतर (V) के समानुपाती होती है: V = IR।\n\n" +
+        "चरण 2 (सूत्र एवं मात्रक): V = I × R; जहाँ V = वोल्ट, I = ऐम्पीयर, तथा R = प्रतिरोध (ओम Ω)।\n\n" +
+        "चरण 3 (व्यावहारिक उदाहरण): विद्युत हीटर तथा पंखों में रेगुलेटर द्वारा प्रतिरोध बदलकर धारा को नियंत्रित किया जाता है।\n\n" +
+        "चरण 4 (निष्कर्ष): यह नियम सम्पूर्ण विद्युत अभियांत्रिकी एवं परिपथ डिज़ाइन का मूल आधार है।"
+      );
+    } else {
+      return (
+        "Step 1 (Ohm's Law Definition): At constant temperature, the electric current (I) flowing through a conductor is directly proportional to the potential difference (V) across its ends: V = IR.\n\n" +
+        "Step 2 (Formula & Units): V = I × R, where V is Voltage (Volts), I is Current (Amperes), and R is Resistance (Ohms Ω).\n\n" +
+        "Step 3 (Practical Application): Circuit components and rheostats adjust resistance to regulate power and protect electronics from overcurrent.\n\n" +
+        "Step 4 (Summary & Key Takeaway): Ohm's law forms the bedrock of electrical network theory and circuit analysis."
+      );
+    }
+  }
+
+  // 4. Mathematics - Pythagoras Theorem & Quadratic Equations
+  if (qLower.includes('pythagor') || qLower.includes('triangle') || qLower.includes('quadratic') || qLower.includes('trigonometr')) {
+    if (isOdia) {
+      return (
+        "ପଦକ୍ଷେପ ୧ (ମୂଳ ଉପପାଦ୍ୟ): ଏକ ସମକୋଣୀ ତ୍ରିଭୁଜରେ କର୍ଣ୍ଣର ବର୍ଗ ଅନ୍ୟ ଦୁଇ ବାହୁର ବର୍ଗର ଯୋଗଫଳ ସହିତ ସମାନ ହୁଏ: a² + b² = c² (କର୍ଣ୍ଣ² = ଭୂମି² + ଲମ୍ବ²)।\n\n" +
+        "ପଦକ୍ଷେପ ୨ (ଦ୍ୱିଘାତ ସମୀକରଣ ସୂତ୍ର): ax² + bx + c = 0 ପାଇଁ ମୂଳଦ୍ୱୟ x = [-b ± √(b² - 4ac)] / (2a) ଅଟେ।\n\n" +
+        "ପଦକ୍ଷେପ ୩ (ବାସ୍ତବ ଉଦାହରଣ): ନିର୍ମାଣ କାର୍ଯ୍ୟ, ଜିପିଏସ୍ ନାଭିଗେସନ୍ ଏବଂ ଉଚ୍ଚତା ମାପିବାରେ ଏହି ଗାଣିତିକ ସୂତ୍ର ସର୍ବଦା ବ୍ୟବହୃତ ହୁଏ।\n\n" +
+        "ପଦକ୍ଷେପ ୪ (ସାରାଂଶ): ଏହି ଜ୍ୟାମିତିକ ଓ ବୀଜଗାଣିତିକ ନିୟମ ଉଚ୍ଚ ଗଣିତ ଏବଂ ଇଞ୍ଜିନିୟରିଂର ପ୍ରମୁଖ ସୋପାନ ଅଟେ।"
+      );
+    } else if (isHindi) {
+      return (
+        "चरण 1 (पाइथागोरस प्रमेय): किसी समकोण त्रिभुज में कर्ण का वर्ग शेष दोनों भुजाओं के वर्गों के योग के बराबर होता है: a² + b² = c² (कर्ण² = लम्ब² + आधार²)।\n\n" +
+        "चरण 2 (द्विघात समीकरण सूत्र): समीकरण ax² + bx + c = 0 के मूल: x = [-b ± √(b² - 4ac)] / (2a)।\n\n" +
+        "चरण 3 (व्यावहारिक उपयोग): भवन निर्माण, नौवहन (GPS), और खगोल विज्ञान में दूरियों की सटीक गणना हेतु इसका उपयोग होता है।\n\n" +
+        "चरण 4 (निष्कर्ष): यह सिद्धांत ज्यामिति और त्रिकोणमिति की रीढ़ है।"
+      );
+    } else {
+      return (
+        "Step 1 (Core Theorem): In a right-angled triangle, the square of the hypotenuse is equal to the sum of the squares of the other two sides: a² + b² = c².\n\n" +
+        "Step 2 (Quadratic Formula Formulation): For ax² + bx + c = 0, the solutions are given by x = [-b ± √(b² - 4ac)] / (2a).\n\n" +
+        "Step 3 (Practical Application): Surveying, civil structural design, trajectory tracking, and computer graphics rely intrinsically on these fundamentals.\n\n" +
+        "Step 4 (Summary & Key Takeaway): These algebraic and geometric identities represent essential tools for all STEM fields."
+      );
+    }
+  }
+
+  // 5. Odisha History, Culture & Geography (OPSC / State Competitive)
+  if (qLower.includes('odisha') || qLower.includes('konark') || qLower.includes('jagannath') || qLower.includes('chilika') || qLower.includes('utkal')) {
+    if (isOdia) {
+      return (
+        "ପଦକ୍ଷେପ ୧ (ଓଡ଼ିଶାର ଐତିହାସିକ ଗୌରବ): ଓଡ଼ିଶା କଳିଙ୍ଗ ଯୁଦ୍ଧ (୨୬୧ ଖ୍ରୀଷ୍ଟପୂର୍ବ), ପ୍ରସିଦ୍ଧ ଜଗନ୍ନାଥ ସଂସ୍କୃତି ଏବଂ ସମୃଦ୍ଧ ସାମୁଦ୍ରିକ ବାଣିଜ୍ୟ (ବାଲିଯାତ୍ରା) ପାଇଁ ବିଶ୍ୱବିଦିତ।\n\n" +
+        "ପଦକ୍ଷେପ ୨ (ପ୍ରମୁଖ କୀର୍ତ୍ତିରାଜି): ୟୁନେସ୍କୋ ବିଶ୍ୱ ଐତିହ୍ୟ କୋଣାର୍କ ସୂର୍ଯ୍ୟ ମନ୍ଦିର, ଭୁବନେଶ୍ୱରର ଲିଙ୍ଗରାଜ ମନ୍ଦିର, ପୁରୀ ଶ୍ରୀମନ୍ଦିର ଏବଂ ଏସିଆର ବୃହତ୍ତମ ଲୁଣିଆ ହ୍ରଦ ଚିଲିକା।\n\n" +
+        "ପଦକ୍ଷେପ ୩ (ଭାଷା ଓ ରାଜ୍ୟ ଗଠନ): ୧ ଏପ୍ରିଲ ୧୯୩୬ ରେ ଭାଷାଭିତ୍ତିକ ସ୍ୱତନ୍ତ୍ର ରାଜ୍ୟ ଭାବେ ଓଡ଼ିଶା ଗଠିତ ହୋଇଥିଲା। ଓଡ଼ିଆ ଭାଷା ଭାରତର ଏକ ଶାସ୍ତ୍ରୀୟ ଭାଷା (Classical Language) ର ମାନ୍ୟତା ପ୍ରାପ୍ତ।\n\n" +
+        "ପଦକ୍ଷେପ ୪ (ସାରାଂଶ): ଏହି ତଥ୍ୟଗୁଡ଼ିକ ଓଡ଼ିଶା ଲୋକସେବା ଆୟୋଗ (OPSC) ଓ ଅନ୍ୟାନ୍ୟ ପ୍ରତିଯୋଗିତାମୂଳକ ପରୀକ୍ଷା ପାଇଁ ଅତ୍ୟନ୍ତ ମହତ୍ତ୍ୱପୂର୍ଣ୍ଣ।"
+      );
+    } else if (isHindi) {
+      return (
+        "चरण 1 (ओडिशा का ऐतिहासिक गौरव): ओडिशा प्राचीन कलिंग युद्ध (261 ई.पू.), जगन्नाथ संस्कृति और समृद्ध समुद्री व्यापार (बालियात्रा) के लिए प्रसिद्ध है।\n\n" +
+        "चरण 2 (प्रमुख धरोहर): यूनेस्को विश्व धरोहर कोणार्क सूर्य मंदिर, भुवनेश्वर का लिंगराज मंदिर, पुरी जगन्नाथ मंदिर और एशिया की सबसे बड़ी खारे पानी की झील 'चिल्का'।\n\n" +
+        "चरण 3 (राज्य गठन): 1 अप्रैल 1936 को भाषा के आधार पर अलग राज्य का गठन हुआ। उड़िया भारत की एक शास्त्रीय भाषा (Classical Language) है।\n\n" +
+        "चरण 4 (निष्कर्ष): यह ज्ञान प्रतियोगी परीक्षाओं (OPSC/UPSC) एवं भारतीय इतिहास की समझ के लिए अत्यंत उपयोगी है।"
+      );
+    } else {
+      return (
+        "Step 1 (Historical Significance): Odisha (ancient Kalinga) is famed for the transformative Kalinga War (261 BCE), Jagannath spiritual culture, and maritime Boita Bandana.\n\n" +
+        "Step 2 (Monuments & Ecology): UNESCO World Heritage Sun Temple at Konark, Lingaraj Temple, and Chilika Lake (Asia's largest brackish lagoon).\n\n" +
+        "Step 3 (Formation & Language): Formed as India's first linguistic state on April 1, 1936 (Utkal Divas). Odia holds Classical Language status in India.\n\n" +
+        "Step 4 (Summary & Key Takeaway): Vital for state civil services (OPSC/OSSC) and Indian heritage examinations."
       );
     }
   }
@@ -1108,8 +1188,10 @@ async function request<T>(endpoint: string, options?: RequestInit & { timeoutMs?
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // 12-second default timeout to prevent infinite "Processing..." hang
-  const timeoutMs = options?.timeoutMs ?? 12000;
+  // Dynamic timeout: 35s for auth, OTP, and AI solving (allowing cold starts), 25s for general API calls
+  const isAuthOrSolve = cleanEndpoint.includes('/auth') || cleanEndpoint.includes('/otp') || cleanEndpoint.includes('/solve');
+  const defaultTimeout = isAuthOrSolve ? 35000 : 25000;
+  const timeoutMs = options?.timeoutMs ?? defaultTimeout;
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => {
     timeoutController.abort(new Error(`Request timed out after ${timeoutMs / 1000}s`));

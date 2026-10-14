@@ -382,7 +382,42 @@ def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") 
     print(f"[ATLAS OTP] >>> Verification Code for {clean_email}: {otp_code} (Purpose: {purpose}) <<<")
 
     # -------------------------------------------------------------
-    # 1. Primary: Direct Authenticated SMTP Delivery (100% SPF/DKIM Inbox Delivery)
+    # 1. Cloud-Optimized Fast Path: HTTPS Email APIs (Port 443 - Zero Firewall Block, <1s delivery)
+    # -------------------------------------------------------------
+    brevo_key = os.getenv("BREVO_API_KEY", "").strip()
+    resend_key = os.getenv("RESEND_API_KEY", "").strip()
+    is_cloud_env = bool(os.getenv("RENDER") or os.getenv("VERCEL") or os.getenv("PORT") or os.getenv("DYNO"))
+
+    if (is_cloud_env or not is_smtp_configured()) and brevo_key:
+        try:
+            if _send_via_brevo(brevo_key, clean_email, subject, html_body, plain_text, from_name, from_addr):
+                logger.info(f"[EMAIL OTP] Delivered via Brevo HTTPS API to {clean_email}")
+                return {
+                    "success": True,
+                    "delivered_via": "brevo",
+                    "dev_otp": None,
+                    "message": f"Verification code sent to {clean_email}",
+                    "error": None,
+                }
+        except Exception as e:
+            logger.warning(f"[EMAIL BREVO FAST-PATH FAILED] {e}. Trying secondary channels...")
+
+    if (is_cloud_env or not is_smtp_configured()) and resend_key:
+        try:
+            if _send_via_resend(resend_key, clean_email, subject, html_body, plain_text):
+                logger.info(f"[EMAIL OTP] Delivered via Resend API to {clean_email}")
+                return {
+                    "success": True,
+                    "delivered_via": "resend",
+                    "dev_otp": None,
+                    "message": f"Verification code sent to {clean_email}",
+                    "error": None,
+                }
+        except Exception as e:
+            logger.warning(f"[EMAIL RESEND FAST-PATH FAILED] {e}. Trying secondary channels...")
+
+    # -------------------------------------------------------------
+    # 2. Authenticated Gmail SMTP Delivery (with agile 3.5s timeout)
     # -------------------------------------------------------------
     smtp_errors = []
     if is_smtp_configured():
@@ -398,17 +433,16 @@ def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") 
         msg.attach(MIMEText(plain_text, "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-        # Try configured port first (default 587 STARTTLS), then fallback port (465 SSL)
         ports_to_try = [configured_port, 465 if configured_port != 465 else 587]
 
         for p in ports_to_try:
             try:
                 if p == 465:
-                    with IPv4SMTP_SSL(host, p, timeout=10.0) as server:
+                    with IPv4SMTP_SSL(host, p, timeout=3.5) as server:
                         server.login(user, pwd)
                         server.sendmail(from_addr, [clean_email], msg.as_string())
                 else:
-                    with IPv4SMTP(host, p, timeout=10.0) as server:
+                    with IPv4SMTP(host, p, timeout=3.5) as server:
                         server.ehlo()
                         server.starttls()
                         server.ehlo()
@@ -430,24 +464,8 @@ def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") 
         logger.warning(f"[EMAIL SMTP EXHAUSTED] Could not send via direct SMTP ({'; '.join(smtp_errors)}). Trying HTTPS API fallbacks...")
 
     # -------------------------------------------------------------
-    # 2. Secondary Fallback: HTTP Email APIs (Port 443 HTTPS - Cloud Firewall Proof)
+    # 3. Secondary Fallback: HTTP Email APIs (if not already tried)
     # -------------------------------------------------------------
-    resend_key = os.getenv("RESEND_API_KEY", "").strip()
-    if resend_key:
-        try:
-            if _send_via_resend(resend_key, clean_email, subject, html_body, plain_text):
-                logger.info(f"[EMAIL OTP] Delivered via Resend API to {clean_email}")
-                return {
-                    "success": True,
-                    "delivered_via": "resend",
-                    "dev_otp": None,
-                    "message": f"Verification code sent to {clean_email}",
-                    "error": None,
-                }
-        except Exception as e:
-            logger.warning(f"[EMAIL RESEND FAILED] {e}. Falling back to other channels...")
-
-    brevo_key = os.getenv("BREVO_API_KEY", "").strip()
     if brevo_key:
         try:
             if _send_via_brevo(brevo_key, clean_email, subject, html_body, plain_text, from_name, from_addr):
@@ -461,6 +479,20 @@ def send_otp_email(recipient_email: str, otp_code: str, purpose: str = "login") 
                 }
         except Exception as e:
             logger.warning(f"[EMAIL BREVO FAILED] {e}")
+
+    if resend_key:
+        try:
+            if _send_via_resend(resend_key, clean_email, subject, html_body, plain_text):
+                logger.info(f"[EMAIL OTP] Delivered via Resend API to {clean_email}")
+                return {
+                    "success": True,
+                    "delivered_via": "resend",
+                    "dev_otp": None,
+                    "message": f"Verification code sent to {clean_email}",
+                    "error": None,
+                }
+        except Exception as e:
+            logger.warning(f"[EMAIL RESEND FAILED] {e}")
 
     # -------------------------------------------------------------
     # 3. Local Development Simulation / Unconfigured Fallback

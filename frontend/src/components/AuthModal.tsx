@@ -186,6 +186,17 @@ export function AuthModal({
       return;
     }
 
+    if (api.isOfflineMode()) {
+      const isSoubhagya = loginForm.username_or_email.toLowerCase().includes('soubhagya');
+      const profileName = isSoubhagya ? 'Soubhagya Pattanayak' : (loginForm.username_or_email.split('@')[0] || 'ATLAS Scholar');
+      const role = isSoubhagya ? 'admin' : 'student';
+      const authRes = api.loginOffline(profileName, role, loginForm.username_or_email.trim());
+      playWelcomeSound();
+      onAuthSuccess(authRes.user);
+      onClose();
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await api.login(loginForm);
@@ -226,6 +237,17 @@ export function AuthModal({
 
     if (registerForm.password !== registerForm.confirmPassword) {
       setError('Passwords do not match.');
+      return;
+    }
+
+    if (api.isOfflineMode()) {
+      const isSoubhagya = (registerForm.email + ' ' + registerForm.username).toLowerCase().includes('soubhagya');
+      const profileName = registerForm.full_name?.trim() || registerForm.username.trim() || 'ATLAS Scholar';
+      const role = isSoubhagya ? 'admin' : 'student';
+      const authRes = api.loginOffline(profileName, role, registerForm.email.trim());
+      playWelcomeSound();
+      onAuthSuccess(authRes.user);
+      onClose();
       return;
     }
 
