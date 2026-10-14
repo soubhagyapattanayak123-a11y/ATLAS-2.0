@@ -19,7 +19,6 @@ import {
   Eye,
   Activity,
   Layers,
-  BookOpen,
   UserCheck,
   Camera,
   FileText,
@@ -212,7 +211,9 @@ export function AdminControlPanel({
           </div>
           <div className="admin-title-group">
             <div className="admin-badge-row">
-              <span className="admin-pill-badge">ADMIN CONTROL PANEL</span>
+              <span className="admin-pill-badge" style={{ background: 'rgba(168, 85, 247, 0.2)', border: '1px solid rgba(168, 85, 247, 0.5)', color: '#c084fc', letterSpacing: '0.04em' }}>
+                🛡️ ISOLATED HIGH-SECURITY ADMIN GATE
+              </span>
               <span className="admin-live-pulse-pill">
                 <span className="pulse-dot green" />
                 Live Database Active
@@ -239,6 +240,22 @@ export function AdminControlPanel({
 
           <div className="admin-nav-buttons">
             <button
+              id="admin-nav-btn-lock-dashboard"
+              type="button"
+              className="admin-action-btn"
+              onClick={onNavigateToDashboard}
+              title="Lock Admin Panel and Return to Student Dashboard"
+              style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#f87171',
+                fontWeight: 700
+              }}
+            >
+              <Lock size={15} />
+              <span>Lock & Return to Dashboard</span>
+            </button>
+            <button
               id="admin-nav-btn-image-scanner"
               type="button"
               className="admin-action-btn secondary"
@@ -263,15 +280,6 @@ export function AdminControlPanel({
             >
               <FileText size={15} />
               <span>PDF Scanner</span>
-            </button>
-            <button
-              type="button"
-              className="admin-action-btn secondary"
-              onClick={onNavigateToDashboard}
-              title="Return to Academic Problem Solver"
-            >
-              <BookOpen size={15} />
-              <span>Academic Solver</span>
             </button>
             <button
               type="button"

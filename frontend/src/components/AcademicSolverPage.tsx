@@ -100,7 +100,6 @@ interface AcademicSolverPageProps {
   onTabChange?: (tab: AcademicActiveTab) => void;
   onNavigateToAuth?: () => void;
   onLogout?: () => void;
-  onNavigateToAdmin?: () => void;
   onNavigateToWorkspace?: () => void;
   stats?: ItemStats | null;
 }
@@ -112,7 +111,6 @@ export function AcademicSolverPage({
   onTabChange,
   onNavigateToAuth,
   onLogout,
-  onNavigateToAdmin,
   onNavigateToWorkspace,
   stats: externalStats,
 }: AcademicSolverPageProps) {
@@ -2398,22 +2396,7 @@ Passage: (The 2-3 spoken sentences)`;
               </button>
             )}
 
-            {currentUser?.role === 'admin' && onNavigateToAdmin && (
-              <button
-                type="button"
-                className="btn-academic-subtle"
-                onClick={onNavigateToAdmin}
-                style={{
-                  background: 'rgba(168, 85, 247, 0.15)',
-                  borderColor: 'rgba(168, 85, 247, 0.4)',
-                  color: '#c084fc',
-                  fontWeight: 700,
-                }}
-                title="Open Admin Control Panel"
-              >
-                <span>🛡️ Admin Panel</span>
-              </button>
-            )}
+            {/* Admin panel isolated: removed from dashboard header */}
             {onNavigateToAuth && (
               <button
                 type="button"

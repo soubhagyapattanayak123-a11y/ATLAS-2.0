@@ -1,0 +1,22 @@
+{
+  "anti_overfitting_framework": "ATLAS 2.0 Regularized Fine-Tuning Spec",
+  "recommended_hyperparameters": {
+    "n_epochs": 2,
+    "rationale_epochs": "Prevents catastrophic memorization and validation loss divergence on specialized academic datasets.",
+    "learning_rate": 1.5e-05,
+    "lr_scheduler_type": "cosine",
+    "warmup_ratio": 0.1,
+    "weight_decay": 0.1,
+    "rationale_weight_decay": "L2 regularization penalizing large weights to enforce generalized mathematical problem-solving.",
+    "gradient_accumulation_steps": 4,
+    "early_stopping_patience": 2,
+    "max_grad_norm": 1.0,
+    "dropout_rate": 0.05
+  },
+  "dataset_metadata": {
+    "total_augmented_samples": 23,
+    "train_samples": 18,
+    "validation_samples": 5,
+    "train_val_split": "80/19"
+  }
+}

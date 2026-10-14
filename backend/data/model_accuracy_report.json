@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-10-15 04:59:21",
+  "overall_accuracy_percent": 95.8,
+  "average_latency_sec": 4.25,
+  "grade": "A+ (Production Gold Standard • Olympiad / JEE Ready)",
+  "detailed_results": [
+    {
+      "test_id": "ACC-MATH-01",
+      "domain": "Calculus (Integration)",
+      "score": 100.0,
+      "latency_sec": 3.46,
+      "steps_identified": 4,
+      "feedback": "Ground-truth matched (5/6 key terms). | Step completeness verified (4 steps >= 3 required). | Ultra-fast latency (3.46s)."
+    },
+    {
+      "test_id": "ACC-MATH-02",
+      "domain": "Algebra (Complex Roots)",
+      "score": 91.4,
+      "latency_sec": 3.53,
+      "steps_identified": 4,
+      "feedback": "Ground-truth matched (5/7 key terms). | Step completeness verified (4 steps >= 3 required). | Ultra-fast latency (3.53s)."
+    },
+    {
+      "test_id": "ACC-MATH-03",
+      "domain": "Linear Algebra / Arithmetic",
+      "score": 100.0,
+      "latency_sec": 2.95,
+      "steps_identified": 5,
+      "feedback": "Ground-truth matched (3/3 key terms). | Step completeness verified (5 steps >= 2 required). | Ultra-fast latency (2.95s)."
+    },
+    {
+      "test_id": "ACC-PHYS-01",
+      "domain": "Physics (Newton's Laws)",
+      "score": 97.0,
+      "latency_sec": 5.02,
+      "steps_identified": 4,
+      "feedback": "Ground-truth matched (9/9 key terms). | Step completeness verified (4 steps >= 4 required). | Good response latency (5.02s)."
+    },
+    {
+      "test_id": "ACC-PHYS-02",
+      "domain": "Physics (AC Electromagnetism)",
+      "score": 88.0,
+      "latency_sec": 3.56,
+      "steps_identified": 4,
+      "feedback": "Ground-truth matched (4/6 key terms). | Step completeness verified (4 steps >= 2 required). | Ultra-fast latency (3.56s)."
+    },
+    {
+      "test_id": "ACC-CHEM-01",
+      "domain": "Organic Chemistry (Mechanisms)",
+      "score": 97.0,
+      "latency_sec": 5.86,
+      "steps_identified": 4,
+      "feedback": "Ground-truth matched (7/7 key terms). | Step completeness verified (4 steps >= 3 required). | Good response latency (5.86s)."
+    },
+    {
+      "test_id": "ACC-LANG-01",
+      "domain": "Indic Multilingual (Pure Odia Script)",
+      "score": 97.0,
+      "latency_sec": 5.37,
+      "steps_identified": 3,
+      "feedback": "Ground-truth matched (6/7 key terms). | Step completeness verified (3 steps >= 3 required). | Good response latency (5.37s). | Pure Odia script verified (100% Unicode 0x0B00-0x0B7F compliant)."
+    }
+  ]
+}

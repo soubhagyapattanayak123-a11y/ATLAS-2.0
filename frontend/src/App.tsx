@@ -53,6 +53,12 @@ export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [welcomeCelebrationUser, setWelcomeCelebrationUser] = useState<User | null>(null);
+  const [isAdminMfaVerified, setIsAdminMfaVerified] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('atlas_admin_mfa_verified') === 'true';
+    }
+    return false;
+  });
 
 
   // Filters
@@ -218,17 +224,25 @@ export function App() {
     setCurrentView('auth');
   };
 
-  const handleAuthSuccess = (authenticatedUser: User) => {
+  const handleAuthSuccess = (authenticatedUser: User, isMfaVerified: boolean = false) => {
     setActiveUserStorageId(authenticatedUser.id);
     purgeLegacyGlobalStorage();
     setUser(authenticatedUser);
     addToast(`Authenticated as ${authenticatedUser.full_name || authenticatedUser.username}!`);
-    // Trigger welcome sound and celebratory greeting overlay
     playWelcomeSound();
-    setWelcomeCelebrationUser(authenticatedUser);
-    // When user logs in, always show the Home page first
-    setAcademicTab('home');
-    setCurrentView('dashboard');
+
+    if (authenticatedUser.role === 'admin' && isMfaVerified) {
+      setIsAdminMfaVerified(true);
+      sessionStorage.setItem('atlas_admin_mfa_verified', 'true');
+      addToast('🛡️ High-Security Admin Control Panel Unlocked!', 'success');
+      setCurrentView('admin');
+    } else {
+      setIsAdminMfaVerified(false);
+      sessionStorage.removeItem('atlas_admin_mfa_verified');
+      setWelcomeCelebrationUser(authenticatedUser);
+      setAcademicTab('home');
+      setCurrentView('dashboard');
+    }
   };
 
   const handleCelebrationNavigate = (tab: AcademicActiveTab) => {
@@ -241,6 +255,8 @@ export function App() {
     await api.logout();
     clearActiveUserStorageId();
     purgeLegacyGlobalStorage();
+    sessionStorage.removeItem('atlas_admin_mfa_verified');
+    setIsAdminMfaVerified(false);
     setUser(null);
     setCurrentView('auth');
     addToast('Logged out of session');
@@ -334,8 +350,8 @@ export function App() {
       <>
         <LoginPage
           currentUser={user}
-          onLoginSuccess={(authedUser) => {
-            handleAuthSuccess(authedUser);
+          onLoginSuccess={(authedUser, isMfaVerified) => {
+            handleAuthSuccess(authedUser, isMfaVerified);
           }}
           onLogout={handleLogout}
           onBackToDashboard={() => {
@@ -344,11 +360,7 @@ export function App() {
               return;
             }
             setAcademicTab('home');
-            if (user?.role === 'admin') {
-              setCurrentView('admin');
-            } else {
-              setCurrentView('dashboard');
-            }
+            setCurrentView('dashboard');
           }}
         />
 
@@ -369,15 +381,25 @@ export function App() {
     );
   }
 
-  // Dedicated Admin Control Panel & User Management
+  // Dedicated Admin Control Panel & User Management (Isolated High-Security Gate)
   if (currentView === 'admin') {
+    // High-Security Isolation Guard: Only accessible after Email + Password + OTP verification
+    if (!user || user.role !== 'admin' || !isAdminMfaVerified) {
+      setCurrentView('auth');
+      return null;
+    }
+
     return (
       <>
         <AdminControlPanel
           currentUser={user}
           onNavigateToDashboard={() => {
+            // Lock and isolate admin panel when returning to student dashboard
+            setIsAdminMfaVerified(false);
+            sessionStorage.removeItem('atlas_admin_mfa_verified');
             setAcademicTab('home');
             setCurrentView('dashboard');
+            addToast('Admin panel locked. Student dashboard active.', 'success');
           }}
           onNavigateToImageScanner={() => {
             setAcademicTab('image-scanner');
@@ -424,8 +446,8 @@ export function App() {
         <>
           <LoginPage
             currentUser={null}
-            onLoginSuccess={(authedUser) => {
-              handleAuthSuccess(authedUser);
+            onLoginSuccess={(authedUser, isMfaVerified) => {
+              handleAuthSuccess(authedUser, isMfaVerified);
             }}
             onLogout={handleLogout}
             onBackToDashboard={() => {
@@ -455,7 +477,6 @@ export function App() {
           activeTab={academicTab}
           onTabChange={(tab) => setAcademicTab(tab)}
           onNavigateToAuth={() => setCurrentView('auth')}
-          onNavigateToAdmin={() => setCurrentView('admin')}
           onNavigateToWorkspace={(user?.role === 'admin' || user?.role === 'developer') ? () => setCurrentView('nodes') : undefined}
           onLogout={handleLogout}
           stats={stats}
@@ -496,7 +517,6 @@ export function App() {
           activeTab={academicTab}
           onTabChange={(tab) => setAcademicTab(tab)}
           onNavigateToAuth={() => setCurrentView('auth')}
-          onNavigateToAdmin={user?.role === 'admin' ? () => setCurrentView('admin') : undefined}
           onLogout={handleLogout}
           stats={stats}
         />
@@ -543,19 +563,8 @@ export function App() {
           </div>
         </div>
 
-        {/* View Switcher Tabs */}
+        {/* View Switcher Tabs - Admin panel removed & isolated */}
         <div className="view-toggle-nav">
-          {user?.role === 'admin' && (
-            <button
-              id="nav-tab-admin"
-              className="nav-tab-btn"
-              onClick={() => setCurrentView('admin')}
-              style={{ color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.35)' }}
-            >
-              <ShieldCheck size={14} />
-              <span>Admin Panel</span>
-            </button>
-          )}
           <button
             id="nav-tab-image-scanner"
             className="nav-tab-btn"

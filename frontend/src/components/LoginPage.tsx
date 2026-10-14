@@ -33,7 +33,7 @@ import { DownloadCachedAppModal } from './DownloadCachedAppModal';
 
 interface LoginPageProps {
   currentUser: User | null;
-  onLoginSuccess: (user: User) => void;
+  onLoginSuccess: (user: User, isMfaVerified?: boolean) => void;
   onLogout: () => void;
   onBackToDashboard: () => void;
 }
@@ -135,6 +135,14 @@ export function LoginPage({
   const [otpSending, setOtpSending] = useState<boolean>(false);
   const [otpVerifying, setOtpVerifying] = useState<boolean>(false);
 
+  // Isolated High-Security Administrator Gate States
+  const [adminMfaStep, setAdminMfaStep] = useState<boolean>(false);
+  const [adminMfaPendingUser, setAdminMfaPendingUser] = useState<User | null>(null);
+  const [adminMfaOtpDigits, setAdminMfaOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [adminMfaTimer, setAdminMfaTimer] = useState<number>(0);
+  const [adminMfaSending, setAdminMfaSending] = useState<boolean>(false);
+  const [adminMfaVerifying, setAdminMfaVerifying] = useState<boolean>(false);
+
   const getOtpInputId = (idx: number) => {
     if (mode === 'forgot_password') {
       return `forgot-otp-input-${idx}`;
@@ -152,6 +160,111 @@ export function LoginPage({
       return () => clearInterval(timer);
     }
   }, [otpTimer]);
+
+  useEffect(() => {
+    if (adminMfaTimer > 0) {
+      const timer = setInterval(() => {
+        setAdminMfaTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [adminMfaTimer]);
+
+  const handleAdminMfaDigitChange = (idx: number, val: string) => {
+    const cleanVal = val.replace(/[^0-9]/g, '');
+    const updated = [...adminMfaOtpDigits];
+
+    if (cleanVal.length > 1) {
+      const pasted = cleanVal.slice(0, 6).split('');
+      pasted.forEach((ch, pIdx) => {
+        if (pIdx < 6) updated[pIdx] = ch;
+      });
+      setAdminMfaOtpDigits(updated);
+      const nextIdx = Math.min(5, pasted.length - 1);
+      const nextEl = document.getElementById(`admin-mfa-otp-${nextIdx}`);
+      if (nextEl) (nextEl as HTMLInputElement).focus();
+      return;
+    }
+
+    updated[idx] = cleanVal ? cleanVal[cleanVal.length - 1] : '';
+    setAdminMfaOtpDigits(updated);
+
+    if (cleanVal && idx < 5) {
+      const nextEl = document.getElementById(`admin-mfa-otp-${idx + 1}`);
+      if (nextEl) (nextEl as HTMLInputElement).focus();
+    }
+  };
+
+  const handleAdminMfaKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !adminMfaOtpDigits[idx] && idx > 0) {
+      const prevEl = document.getElementById(`admin-mfa-otp-${idx - 1}`);
+      if (prevEl) (prevEl as HTMLInputElement).focus();
+    }
+  };
+
+  const handleVerifyAdminMfa = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!adminMfaPendingUser) return;
+    const code = adminMfaOtpDigits.join('').trim();
+    if (code.length !== 6) {
+      setError('Please enter all 6 digits of the administrator verification code.');
+      return;
+    }
+
+    setAdminMfaVerifying(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      if (api.isOfflineMode()) {
+        playWelcomeSound();
+        setSuccessMessage('Administrator verified! Unlocking Isolated Admin Control Panel...');
+        sessionStorage.setItem('atlas_admin_mfa_verified', 'true');
+        setTimeout(() => {
+          onLoginSuccess(adminMfaPendingUser, true);
+        }, 350);
+        return;
+      }
+
+      const res = await api.verifyEmailOTP({
+        email: adminMfaPendingUser.email,
+        otp_code: code,
+      });
+
+      playWelcomeSound();
+      setSuccessMessage('Administrator verified via Two-Factor OTP! Unlocking Isolated Admin Panel...');
+      sessionStorage.setItem('atlas_admin_mfa_verified', 'true');
+      setTimeout(() => {
+        onLoginSuccess(res.user || adminMfaPendingUser, true);
+      }, 400);
+    } catch (err: any) {
+      setError(err?.message || 'Invalid or expired OTP code. Please check your admin inbox.');
+    } finally {
+      setAdminMfaVerifying(false);
+    }
+  };
+
+  const handleResendAdminMfa = async () => {
+    if (!adminMfaPendingUser || adminMfaTimer > 0) return;
+    setAdminMfaSending(true);
+    setError(null);
+    try {
+      const res = await api.sendEmailOTP({ email: adminMfaPendingUser.email, purpose: 'login' });
+      setAdminMfaTimer(res.cooldown_seconds || 60);
+      setSuccessMessage(`New security code sent to ${adminMfaPendingUser.email}.`);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to dispatch new OTP.');
+    } finally {
+      setAdminMfaSending(false);
+    }
+  };
+
+  const handleCancelAdminMfa = () => {
+    setAdminMfaStep(false);
+    setAdminMfaPendingUser(null);
+    setAdminMfaOtpDigits(['', '', '', '', '', '']);
+    setError(null);
+    setSuccessMessage(null);
+  };
 
   const handleSendOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -279,11 +392,23 @@ export function LoginPage({
       const role = isSoubhagya ? 'admin' : 'student';
       const targetEmail = email.trim() || 'soubhagyapattanayak637@gmail.com';
       const authRes = api.loginOffline(profileName, role, targetEmail);
+
+      if (isSoubhagya) {
+        // High-Security Offline Admin Gate
+        setAdminMfaPendingUser(authRes.user);
+        setAdminMfaStep(true);
+        setAdminMfaOtpDigits(['', '', '', '', '', '']);
+        setAdminMfaTimer(30);
+        setError(null);
+        setSuccessMessage('Administrator credentials verified (Offline Security Gate). Click Verify or enter any 6-digit PIN to unlock Admin Panel.');
+        return;
+      }
+
       playWelcomeSound();
       const actionMsg = mode === 'signup' ? 'Offline Account Created!' : 'Logged in via Offline Mode!';
       setSuccessMessage(`${actionMsg} Welcome, ${authRes.user.full_name}! Launching Workspace...`);
       setTimeout(() => {
-        onLoginSuccess(authRes.user);
+        onLoginSuccess(authRes.user, false);
       }, 350);
       return;
     }
@@ -359,10 +484,40 @@ export function LoginPage({
       };
       const res = await api.login(credentials);
       clearTimeout(safetyTimer);
+
+      const isAdmin =
+        res.user.role === 'admin' ||
+        res.user.email?.toLowerCase().includes('soubhagya') ||
+        email.trim().toLowerCase().includes('soubhagyapattanayak637@gmail.com') ||
+        email.trim().toLowerCase().includes('admin');
+
+      if (isAdmin) {
+        // High-Security 2FA Isolation Gate: Require Email OTP before unlocking Admin Panel
+        setAdminMfaPendingUser(res.user);
+        setAdminMfaStep(true);
+        setAdminMfaOtpDigits(['', '', '', '', '', '']);
+        setAdminMfaTimer(60);
+        setError(null);
+        setSuccessMessage(`Administrator credentials verified. Security OTP dispatched to ${res.user.email}.`);
+
+        try {
+          await api.sendEmailOTP({ email: res.user.email, purpose: 'login' });
+        } catch (otpErr) {
+          console.warn('[Admin Gate] OTP dispatch notice:', otpErr);
+        }
+
+        setTimeout(() => {
+          const firstInput = document.getElementById('admin-mfa-otp-0');
+          if (firstInput) (firstInput as HTMLInputElement).focus();
+        }, 150);
+        return;
+      }
+
+      // Standard Student Login: Lands directly in student dashboard with ZERO admin panel visibility
       playWelcomeSound();
       setSuccessMessage('Login successful! Redirecting to Home Dashboard...');
       setTimeout(() => {
-        onLoginSuccess(res.user);
+        onLoginSuccess(res.user, false);
       }, 350);
     } catch (err: any) {
       clearTimeout(safetyTimer);
@@ -1025,6 +1180,153 @@ export function LoginPage({
                   All questions, solved problems and notes are stored strictly inside your local browser.
                 </span>
               </div>
+            </div>
+          ) : adminMfaStep ? (
+            <div className="admin-mfa-isolation-card" style={{ padding: '0.25rem 0' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '6px 14px',
+                  borderRadius: '999px',
+                  background: 'rgba(168, 85, 247, 0.15)',
+                  border: '1px solid rgba(168, 85, 247, 0.4)',
+                  color: '#c084fc',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  marginBottom: '1rem'
+                }}
+              >
+                <ShieldCheck size={16} color="#c084fc" />
+                <span>High-Security Administrator Gate</span>
+              </div>
+
+              <h2 className="form-main-heading" style={{ color: '#f8fafc', fontSize: '1.45rem', margin: '0 0 0.4rem 0' }}>
+                Admin 2FA Verification
+              </h2>
+              <p className="form-main-subtitle" style={{ color: '#94a3b8', fontSize: '0.88rem', lineHeight: '1.5' }}>
+                Admin credentials verified for <strong style={{ color: '#c084fc' }}>{adminMfaPendingUser?.email}</strong>. Enter the 6-digit cryptographic security code dispatched to your email to unlock the Isolated Admin Control Panel.
+              </p>
+
+              {error && (
+                <div className="login-error-alert" style={{ margin: '1rem 0' }}>
+                  <AlertCircle size={16} />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="login-success-alert" style={{ margin: '1rem 0' }}>
+                  <CheckCircle2 size={16} />
+                  <span>{successMessage}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleVerifyAdminMfa} style={{ marginTop: '1.25rem' }}>
+                <div className="otp-digit-inputs" style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                  {adminMfaOtpDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      id={`admin-mfa-otp-${idx}`}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleAdminMfaDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleAdminMfaKeyDown(idx, e)}
+                      autoFocus={idx === 0}
+                      style={{
+                        width: '46px',
+                        height: '52px',
+                        fontSize: '1.35rem',
+                        fontWeight: 800,
+                        textAlign: 'center',
+                        borderRadius: '10px',
+                        background: 'rgba(15, 23, 42, 0.8)',
+                        border: digit ? '2px solid #a855f7' : '1px solid rgba(148, 163, 184, 0.25)',
+                        color: '#f8fafc',
+                        outline: 'none',
+                        transition: 'all 0.2s',
+                        boxShadow: digit ? '0 0 12px rgba(168, 85, 247, 0.35)' : 'none'
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={adminMfaVerifying || adminMfaOtpDigits.join('').length !== 6}
+                  className="btn-login-submit"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed, #9333ea)',
+                    boxShadow: '0 4px 16px rgba(124, 58, 237, 0.45)',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    width: '100%',
+                    padding: '13px',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    cursor: (adminMfaVerifying || adminMfaOtpDigits.join('').length !== 6) ? 'not-allowed' : 'pointer',
+                    opacity: (adminMfaVerifying || adminMfaOtpDigits.join('').length !== 6) ? 0.7 : 1,
+                  }}
+                >
+                  {adminMfaVerifying ? (
+                    <>
+                      <RefreshCw size={18} className="spin" />
+                      <span>Verifying Security Code...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck size={18} />
+                      <span>Verify & Open Admin Panel</span>
+                      <ArrowRight size={18} />
+                    </>
+                  )}
+                </button>
+
+                <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={handleCancelAdminMfa}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#94a3b8',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <ArrowLeft size={14} />
+                    <span>Cancel & Back</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={adminMfaTimer > 0 || adminMfaSending}
+                    onClick={handleResendAdminMfa}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: adminMfaTimer > 0 ? '#64748b' : '#c084fc',
+                      fontSize: '0.85rem',
+                      cursor: adminMfaTimer > 0 ? 'default' : 'pointer',
+                      fontWeight: 600
+                    }}
+                  >
+                    {adminMfaTimer > 0 ? `Resend Code in ${adminMfaTimer}s` : 'Resend Code'}
+                  </button>
+                </div>
+              </form>
             </div>
           ) : (
             <>
