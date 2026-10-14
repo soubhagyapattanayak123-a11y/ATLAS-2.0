@@ -1003,6 +1003,8 @@ class AskQuestionRequest(BaseModel):
 class SolveMathRequest(BaseModel):
     problem: str
     language: str = "English"
+    complexity_mode: Optional[str] = "standard"  # "standard" | "complex"
+    domain: Optional[str] = None  # "calculus" | "complex_numbers" | "linear_algebra" | "differential_equations" | "algebra"
 
 
 @app.post("/api/ai/ask", tags=["AI Academic Solver"])
@@ -1021,9 +1023,15 @@ def ai_ask_endpoint(body: AskQuestionRequest):
 def ai_solve_math_endpoint(body: SolveMathRequest):
     """
     Solve mathematics problems step-by-step in English, Hindi, or Odia.
-    Returns structured steps and verified final answer.
+    Supports standard algebra and complex mathematics (Calculus, Complex Numbers, ODEs, Matrices).
+    Returns structured steps, domain classification, applied formulas, verification check, and LaTeX.
     """
-    return solve_academic_math(body.problem, body.language)
+    return solve_academic_math(
+        problem=body.problem,
+        language=body.language,
+        complexity_mode=body.complexity_mode or "standard",
+        domain=body.domain,
+    )
 
 
 @app.post("/api/ai/scan-image", response_model=ScanImageResponse, tags=["AI Academic Solver"])

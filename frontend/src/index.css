@@ -4596,6 +4596,329 @@ input, textarea, select {
   background: #dbeafe;
 }
 
+/* Complex Mathematics Solution & Suite */
+.math-mode-switcher-container {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--bg-glass, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  padding: 0.35rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.btn-math-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-math-mode-pill:hover {
+  color: var(--text-primary, #f8fafc);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-math-mode-pill.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(6, 182, 212, 0.2));
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+}
+
+.badge-complex-math-new {
+  font-size: 0.68rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.complex-domain-pills {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.btn-domain-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-domain-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary, #f8fafc);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-domain-pill.active {
+  background: rgba(14, 165, 233, 0.15);
+  border-color: #0ea5e9;
+  color: #38bdf8;
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.25);
+}
+
+.complex-math-keypad {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.65rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.keypad-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-right: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.btn-keypad-pill {
+  padding: 0.2rem 0.55rem;
+  border-radius: 5px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary, #f8fafc);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-keypad-pill:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.complex-solution-panel {
+  border-color: rgba(14, 165, 233, 0.4) !important;
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.03) 0%, rgba(15, 23, 42, 0.6) 100%) !important;
+  box-shadow: 0 4px 20px -2px rgba(14, 165, 233, 0.12);
+}
+
+.badge-complex-domain {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 4px;
+  background: rgba(147, 51, 234, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #c084fc;
+}
+
+.complex-formula-used-card {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.complex-formula-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #60a5fa;
+  font-weight: 700;
+  font-size: 0.84rem;
+}
+
+.complex-formula-body {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.88rem;
+  color: var(--text-primary, #f8fafc);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.complex-verification-card {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.complex-verification-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #34d399;
+  font-weight: 700;
+  font-size: 0.84rem;
+}
+
+.complex-verification-body {
+  font-size: 0.88rem;
+  color: var(--text-primary, #f8fafc);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.complex-latex-box {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.complex-latex-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.btn-copy-latex {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-primary, #f8fafc);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-copy-latex:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #38bdf8;
+  border-color: #38bdf8;
+}
+
+.complex-latex-code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85rem;
+  color: #38bdf8;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.45rem 0.65rem;
+  border-radius: 6px;
+  word-break: break-all;
+  display: block;
+}
+
+/* Light Theme overrides for Complex Math components */
+body[data-theme="light"] .math-mode-switcher-container {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+body[data-theme="light"] .btn-math-mode-pill {
+  color: #475569;
+}
+
+body[data-theme="light"] .btn-math-mode-pill.active {
+  background: #ffffff;
+  color: #0284c7;
+  border-color: #38bdf8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme="light"] .btn-domain-pill {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+body[data-theme="light"] .btn-domain-pill.active {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  color: #0369a1;
+}
+
+body[data-theme="light"] .complex-math-keypad {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+body[data-theme="light"] .btn-keypad-pill {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+body[data-theme="light"] .complex-solution-panel {
+  background: #ffffff !important;
+  border-color: #93c5fd !important;
+}
+
+body[data-theme="light"] .complex-formula-used-card {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+body[data-theme="light"] .complex-formula-body {
+  color: #1e3a8a;
+}
+
+body[data-theme="light"] .complex-verification-card {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+body[data-theme="light"] .complex-verification-body {
+  color: #14532d;
+}
+
+body[data-theme="light"] .complex-latex-box {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+body[data-theme="light"] .complex-latex-code {
+  background: #ffffff;
+  color: #0284c7;
+}
+
+body[data-theme="light"] .btn-copy-latex {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
 /* Flashcard styles */
 .flashcard-interactive-box {
   display: flex;

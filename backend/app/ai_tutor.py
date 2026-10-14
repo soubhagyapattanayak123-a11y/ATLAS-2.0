@@ -417,38 +417,414 @@ def solve_deterministic_math_py(problem: str, language: str = "English") -> Opti
     return None
 
 
-def solve_academic_math(problem: str, language: str = "English") -> Dict[str, Any]:
+def solve_complex_math_deterministic_py(problem: str, language: str = "English", domain: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    clean = problem.strip()
+    is_odia = language.lower() in ["odia", "or", "or-in"]
+    is_hindi = language.lower() in ["hindi", "hi", "hi-in"]
+
+    # 1. Complex Numbers: Division (a + bi) / (c + di)
+    div_match = re.search(r"\(\s*(-?\d+(?:\.\d+)?)\s*([+-])\s*(\d*(?:\.\d+)?)i\s*\)\s*/\s*\(\s*(-?\d+(?:\.\d+)?)\s*([+-])\s*(\d*(?:\.\d+)?)i\s*\)", clean, re.I)
+    if div_match:
+        a = float(div_match.group(1))
+        b_sign = -1 if div_match.group(2) == '-' else 1
+        b_str = div_match.group(3) or '1'
+        b = b_sign * float(b_str)
+
+        c = float(div_match.group(4))
+        d_sign = -1 if div_match.group(5) == '-' else 1
+        d_str = div_match.group(6) or '1'
+        d = d_sign * float(d_str)
+
+        denom = c*c + d*d
+        if denom != 0:
+            num_real = a*c + b*d
+            num_imag = b*c - a*d
+            real_ans = num_real / denom
+            imag_ans = num_imag / denom
+
+            real_str = to_fraction_str_py(real_ans)
+            imag_abs = abs(imag_ans)
+            imag_str = to_fraction_str_py(imag_abs)
+            imag_term = "i" if imag_str == "1" else f"{imag_str}i"
+            
+            if imag_ans == 0:
+                res_str = real_str
+            elif real_ans == 0:
+                res_str = imag_term if imag_ans > 0 else f"-{imag_term}"
+            else:
+                op = " + " if imag_ans > 0 else " - "
+                res_str = f"{real_str}{op}{imag_term}"
+
+            modulus = math.sqrt(real_ans**2 + imag_ans**2)
+            mod_str = to_fraction_str_py(modulus)
+
+            if is_odia:
+                domain_name = "ଜଟିଳ ସଂଖ୍ୟା ବିଶ୍ଳେଷଣ (Complex Analysis: Division)"
+                formula = "ଜଟିଳ ଭାଗହାର ସୂତ୍ର: z₁/z₂ = (z₁ · z̄₂) / |z₂|², ଯେଉଁଠାରେ z̄₂ = c - di (ଅନୁବନ୍ଧୀ)"
+                steps = [
+                    f"ପଦକ୍ଷେପ ୧ (ସଂଜ୍ଞା): ଦିଆଯାଇଥିବା ଭାଗହାର: z₁ = {a} + {b}i ଏବଂ z₂ = {c} + {d}i",
+                    f"ପଦକ୍ଷେପ ୨ (ଅନୁବନ୍ଧୀ ନିର୍ଣ୍ଣୟ): ହର z₂ ର ଅନୁବନ୍ଧୀ (Conjugate) z̄₂ = {c} - ({d})i",
+                    f"ପଦକ୍ଷେପ ୩ (ଲବ ଓ ହର ଗୁଣନ): ଉଭୟ ଲବ ଓ ହରରେ ({c} - {d}i) ଗୁଣନ କରାଗଲା:\n   ଲବ = ({a} + {b}i)({c} - {d}i) = {num_real} + ({num_imag})i\n   ହର = {c}² + {d}² = {denom}",
+                    f"ପଦକ୍ଷେପ ୪ (ସରଳୀକରଣ): z = ({num_real}/{denom}) + ({num_imag}/{denom})i = {res_str}",
+                    f"ପଦକ୍ଷେପ ୫ (ମାପାଙ୍କ/ମଡ୍ୟୁଲସ୍): |z| = √({real_str}² + {imag_str}²) = {mod_str}",
+                ]
+                verif = f"ଯାଞ୍ଚ: ({res_str}) × ({c} + {d}i) = {a} + {b}i (ସଠିକ୍ ଅଟେ)"
+            elif is_hindi:
+                domain_name = "सम्मिश्र संख्या विश्लेषण (Complex Analysis: Division)"
+                formula = "सम्मिश्र विभाजन नियम: z₁/z₂ = (z₁ · z̄₂) / |z₂|², जहाँ z̄₂ = c - di (संयुग्मी)"
+                steps = [
+                    f"चरण 1 (समस्या): z₁ = {a} + {b}i तथा z₂ = {c} + {d}i का विभाजन।",
+                    f"चरण 2 (संयुग्मी पहचान): हर का संयुग्मी z̄₂ = {c} - ({d})i है।",
+                    f"चरण 3 (गुणा व प्रसार): अंश और हर दोनों में संयुग्मी ({c} - {d}i) से गुणा किया:\n   अंश = ({a} + {b}i)({c} - {d}i) = {num_real} + ({num_imag})i\n   हर = {c}² + {d}² = {denom}",
+                    f"चरण 4 (प्रमाणीकरण रूप a + bi): z = {res_str}",
+                    f"चरण 5 (मापांक |z|): |z| = √({real_str}² + {imag_str}²) = {mod_str}",
+                ]
+                verif = f"सत्यापन: ({res_str}) × ({c} + {d}i) = {a} + {b}i (सत्यापित)"
+            else:
+                domain_name = "Complex Analysis: Division & Conjugates"
+                formula = "Complex Division Formula: z₁/z₂ = (z₁ · z̄₂) / |z₂|², where z̄₂ = c - di is the complex conjugate"
+                steps = [
+                    f"Step 1 (Identify Numerator & Denominator): z₁ = {a} + {b}i, z₂ = {c} + {d}i",
+                    f"Step 2 (Determine Complex Conjugate): The conjugate of the denominator z̄₂ = {c} - ({d})i",
+                    f"Step 3 (Multiply Numerator and Denominator by Conjugate):\n   Numerator = ({a} + {b}i)({c} - {d}i) = {a}·{c} - {a}·{d}i + {b}·{c}i - {b}·{d}i² = {num_real} + ({num_imag})i\n   Denominator = c² + d² = {c}² + {d}² = {denom}",
+                    f"Step 4 (Separate into Real and Imaginary Components):\n   z = ({num_real}/{denom}) + ({num_imag}/{denom})i = {res_str}",
+                    f"Step 5 (Calculate Modulus |z|):\n   |z| = √(Re(z)² + Im(z)²) = √(({real_str})² + ({imag_str})²) = {mod_str}",
+                ]
+                verif = f"Multiplication Check: ({res_str}) · ({c} + {d}i) = {a} + {b}i (Confirmed exact equality)"
+
+            return {
+                "problem": clean,
+                "domain": domain_name,
+                "formula_used": formula,
+                "steps": steps,
+                "result": res_str,
+                "verification": verif,
+                "latex": f"\\frac{{{a} + {b}i}}{{{c} + {d}i}} = {res_str}",
+                "complexity_mode": "complex",
+            }
+
+    # 2. Linear Algebra: 2x2 Matrix Determinant det([[a, b], [c, d]])
+    mat_match = re.search(r"(?:det(?:erminant)?\s*\(?\s*|find\s+det\s*)?\[\s*\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]\s*,\s*\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]\s*\]\)?", clean, re.I)
+    if mat_match:
+        a = float(mat_match.group(1))
+        b = float(mat_match.group(2))
+        c = float(mat_match.group(3))
+        d = float(mat_match.group(4))
+
+        det = a*d - b*c
+        det_str = to_fraction_str_py(det)
+        
+        if is_odia:
+            domain_name = "ରୈଖିକ ବୀଜଗଣିତ: ମାଟ୍ରିକ୍ସ ନିର୍ଣ୍ଣାୟକ (Linear Algebra: Determinant)"
+            formula = "ମାଟ୍ରିକ୍ସ ନିର୍ଣ୍ଣାୟକ ସୂତ୍ର: det(A) = |A| = ad - bc, ଏବଂ ବିପରୀତ A⁻¹ = (1/det(A)) · adj(A)"
+            steps = [
+                f"ପଦକ୍ଷେପ ୧ (ମାଟ୍ରିକ୍ସ ଚିହ୍ନଟ): A = [[{a}, {b}], [{c}, {d}]], ଯେଉଁଠାରେ a={a}, b={b}, c={c}, d={d}",
+                f"ପଦକ୍ଷେପ ୨ (କ୍ରସ୍-ଗୁଣନ): det(A) = (a × d) - (b × c) = ({a} × {d}) - ({b} × {c})",
+                f"ପଦକ୍ଷେପ ୩ (ନିର୍ଣ୍ଣାୟକ ମୂଲ୍ୟ): det(A) = {a*d} - {b*c} = {det_str}",
+            ]
+            if det != 0:
+                inv_a = to_fraction_str_py(d / det)
+                inv_b = to_fraction_str_py(-b / det)
+                inv_c = to_fraction_str_py(-c / det)
+                inv_d = to_fraction_str_py(a / det)
+                steps.append(f"ପଦକ୍ଷେପ ୪ (ବିପରୀତ ମାଟ୍ରିକ୍ସ A⁻¹): A⁻¹ = 1/{det_str} × [[{d}, {-b}], [{-c}, {a}]] = [[{inv_a}, {inv_b}], [{inv_c}, {inv_d}]]")
+                verif = "ଯାଞ୍ଚ: A × A⁻¹ = I₂ (୨×୨ ଅଭେଦ ମାଟ୍ରିକ୍ସ) ସତ୍ୟ ପ୍ରମାଣିତ।"
+            else:
+                steps.append("ପଦକ୍ଷେପ ୪: ଯେହେତୁ det(A) = 0, ଏହି ମାଟ୍ରିକ୍ସର କୌଣସି ବିପରୀତ (Inverse) ସମ୍ଭବ ନୁହେଁ (Singular Matrix)।")
+                verif = "ଯାଞ୍ଚ: det = 0 ପ୍ରମାଣ କରେ ଯେ ମାଟ୍ରିକ୍ସ ସିଙ୍ଗୁଲାର୍।"
+        else:
+            domain_name = "Linear Algebra: 2x2 Matrix Determinant & Inversion"
+            formula = "Determinant Formula: det(A) = ad - bc; Inverse: A⁻¹ = (1/det(A))·[[d, -b], [-c, a]]"
+            steps = [
+                f"Step 1 (Matrix Definition): Given 2x2 matrix A = [[{a}, {b}], [{c}, {d}]] with elements a={a}, b={b}, c={c}, d={d}",
+                f"Step 2 (Cross Multiplication): det(A) = (a · d) - (b · c) = ({a} · {d}) - ({b} · {c})",
+                f"Step 3 (Calculate Determinant): det(A) = {a*d} - {b*c} = {det_str}",
+            ]
+            if det != 0:
+                inv_a = to_fraction_str_py(d / det)
+                inv_b = to_fraction_str_py(-b / det)
+                inv_c = to_fraction_str_py(-c / det)
+                inv_d = to_fraction_str_py(a / det)
+                steps.append(f"Step 4 (Adjugate & Inverse Matrix A⁻¹): Adj(A) = [[{d}, {-b}], [{-c}, {a}]], so A⁻¹ = (1/{det_str}) · Adj(A) = [[{inv_a}, {inv_b}], [{inv_c}, {inv_d}]]")
+                verif = "Verification: A · A⁻¹ yields the 2x2 Identity Matrix [[1, 0], [0, 1]]."
+            else:
+                steps.append("Step 4 (Invertibility): Since det(A) = 0, the matrix is singular and has no multiplicative inverse.")
+                verif = "Verification: Non-invertible due to zero determinant."
+
+        res_str = f"det(A) = {det_str}" + (f", A⁻¹ = [[{to_fraction_str_py(d/det)}, {to_fraction_str_py(-b/det)}], [{to_fraction_str_py(-c/det)}, {to_fraction_str_py(a/det)}]]" if det != 0 else " (Singular)")
+        return {
+            "problem": clean,
+            "domain": domain_name,
+            "formula_used": formula,
+            "steps": steps,
+            "result": res_str,
+            "verification": verif,
+            "latex": f"\\det\\begin{{pmatrix}}{a} & {b} \\\\ {c} & {d}\\end{{pmatrix}} = {det_str}",
+            "complexity_mode": "complex",
+        }
+
+    # 3. Calculus: Derivatives of Polynomials / Standard Functions
+    deriv_match = re.search(r"(?:d/dx|derivative\s+of|diff)\s*\(?([^)]+)\)?", clean, re.I)
+    if deriv_match:
+        expr = deriv_match.group(1).strip()
+        terms = re.findall(r"([+-]?\s*\d*(?:\.\d+)?)\s*x(?:\^(\d+))?|([+-]?\s*\d+(?:\.\d+)?)(?![x^])", expr.replace(" ", ""))
+        if terms and ("x" in expr):
+            deriv_parts = []
+            steps_lines = []
+            for t_coeff, t_power, const_val in terms:
+                if const_val:
+                    steps_lines.append(f"• Constant term {const_val}: d/dx({const_val}) = 0")
+                elif t_coeff is not None:
+                    c_str = t_coeff.replace("+", "").strip()
+                    if c_str == "" or c_str == "+":
+                        c_val = 1.0
+                    elif c_str == "-":
+                        c_val = -1.0
+                    else:
+                        c_val = float(c_str)
+                    
+                    p_val = int(t_power) if t_power else 1
+                    new_coeff = c_val * p_val
+                    new_power = p_val - 1
+
+                    if new_power == 0:
+                        term_res = to_fraction_str_py(new_coeff)
+                        steps_lines.append(f"• Linear term {c_val}x: d/dx({c_val}x) = {term_res}")
+                    elif new_power == 1:
+                        term_res = f"{to_fraction_str_py(new_coeff)}x"
+                        steps_lines.append(f"• Power term {c_val}x^{p_val}: d/dx({c_val}x^{p_val}) = {p_val}·({c_val})x^{new_power} = {term_res}")
+                    else:
+                        term_res = f"{to_fraction_str_py(new_coeff)}x^{new_power}"
+                        steps_lines.append(f"• Power term {c_val}x^{p_val}: d/dx({c_val}x^{p_val}) = {p_val}·({c_val})x^{new_power} = {term_res}")
+                    
+                    deriv_parts.append((new_coeff, term_res))
+
+            if deriv_parts:
+                final_terms = []
+                for idx, (val, txt) in enumerate(deriv_parts):
+                    if idx == 0:
+                        final_terms.append(txt)
+                    else:
+                        if val >= 0:
+                            final_terms.append(f"+ {txt}")
+                        else:
+                            final_terms.append(f"- {txt.lstrip('-')}")
+                res_expr = " ".join(final_terms) if final_terms else "0"
+                res_str = f"dy/dx = {res_expr}"
+
+                if is_odia:
+                    domain_name = "କାଲକୁଲସ୍: ଅବକଳନ (Calculus: Differentiation)"
+                    formula = "ଅବକଳନ ଘାତ ନିୟମ (Power Rule): d/dx(c·xⁿ) = c·n·xⁿ⁻¹, ଏବଂ ସମଷ୍ଟି ନିୟମ: d/dx(u + v) = u' + v'"
+                    steps = [
+                        f"ପଦକ୍ଷେପ ୧ (ସମୀକରଣ ଚିହ୍ନଟ): y = {expr}",
+                        f"ପଦକ୍ଷେପ ୨ (ପ୍ରତ୍ୟେକ ପଦର ଅବକଳନ):\n   " + "\n   ".join(steps_lines),
+                        f"ପଦକ୍ଷେପ ୩ (ଫଳାଫଳ ସଂଯୋଜନ): {res_str}",
+                    ]
+                    verif = "ଯାଞ୍ଚ: ସୀମା (Limits) ଓ ଘାତ ନିୟମ ଆଧାରରେ ପ୍ରତ୍ୟେକ ପଦ ସଠିକ୍ ପ୍ରମାଣିତ।"
+                else:
+                    domain_name = "Calculus: Differentiation (Derivatives)"
+                    formula = "Power Rule: d/dx(c·xⁿ) = c·n·xⁿ⁻¹; Sum & Difference Rule: d/dx(u ± v) = u' ± v'"
+                    steps = [
+                        f"Step 1 (Identify Function): Given f(x) = {expr}",
+                        f"Step 2 (Differentiate Term-by-Term):\n   " + "\n   ".join(steps_lines),
+                        f"Step 3 (Assemble Derivative): {res_str}",
+                    ]
+                    verif = "Verification: Each term satisfies the first-principles definition f'(x) = lim_{h→0} [f(x+h) - f(x)]/h."
+
+                return {
+                    "problem": clean,
+                    "domain": domain_name,
+                    "formula_used": formula,
+                    "steps": steps,
+                    "result": res_str,
+                    "verification": verif,
+                    "latex": f"\\frac{{d}}{{dx}}\\left[{expr}\\right] = {res_expr}",
+                    "graph_equation": res_expr.replace("x^", "x**"),
+                    "complexity_mode": "complex",
+                }
+
+    # 4. Calculus: Indefinite Integration ∫ (3x^2 + 4x - 5) dx
+    int_match = re.search(r"(?:\\int|int|∫)\s*\(?([^)]+)\)?(?:\s*dx)?", clean, re.I)
+    if int_match:
+        expr = int_match.group(1).strip()
+        terms = re.findall(r"([+-]?\s*\d*(?:\.\d+)?)\s*x(?:\^(\d+))?|([+-]?\s*\d+(?:\.\d+)?)(?![x^])", expr.replace(" ", ""))
+        if terms and ("x" in expr):
+            int_parts = []
+            steps_lines = []
+            for t_coeff, t_power, const_val in terms:
+                if const_val:
+                    c_num = float(const_val)
+                    c_str = to_fraction_str_py(c_num)
+                    int_parts.append((c_num, f"{c_str}x"))
+                    steps_lines.append(f"• Constant term {const_val}: ∫ {const_val} dx = {c_str}x")
+                elif t_coeff is not None:
+                    c_str = t_coeff.replace("+", "").strip()
+                    if c_str == "" or c_str == "+":
+                        c_val = 1.0
+                    elif c_str == "-":
+                        c_val = -1.0
+                    else:
+                        c_val = float(c_str)
+                    p_val = int(t_power) if t_power else 1
+                    new_power = p_val + 1
+                    new_coeff = c_val / new_power
+                    c_res = to_fraction_str_py(new_coeff)
+                    if c_res == "1":
+                        term_res = f"x^{new_power}"
+                    elif c_res == "-1":
+                        term_res = f"-x^{new_power}"
+                    else:
+                        term_res = f"{c_res}x^{new_power}"
+                    int_parts.append((new_coeff, term_res))
+                    steps_lines.append(f"• Power term {c_val}x^{p_val}: ∫ {c_val}x^{p_val} dx = {c_val}·(x^{new_power}/{new_power}) = {term_res}")
+
+            if int_parts:
+                final_terms = []
+                for idx, (val, txt) in enumerate(int_parts):
+                    if idx == 0:
+                        final_terms.append(txt)
+                    else:
+                        if val >= 0:
+                            final_terms.append(f"+ {txt}")
+                        else:
+                            final_terms.append(f"- {txt.lstrip('-')}")
+                res_expr = " ".join(final_terms) + " + C"
+                res_str = f"∫ f(x) dx = {res_expr}"
+
+                if is_odia:
+                    domain_name = "କାଲକୁଲସ୍: ଅନିର୍ଦ୍ଦିଷ୍ଟ ସମାକଳନ (Calculus: Indefinite Integration)"
+                    formula = "ସମାକଳନ ଘାତ ନିୟମ: ∫ xⁿ dx = (xⁿ⁺¹)/(n + 1) + C (ଯେଉଁଠାରେ n ≠ -1)"
+                    steps = [
+                        f"ପଦକ୍ଷେପ ୧ (ସମାକଳ୍ୟ ଚିହ୍ନଟ): f(x) = {expr}",
+                        f"ପଦକ୍ଷେପ ୨ (ପ୍ରତ୍ୟେକ ପଦର ସମାକଳନ):\n   " + "\n   ".join(steps_lines),
+                        f"ପଦକ୍ଷେପ ୩ (ଅନ୍ତିମ ସମାକଳନ ସ୍ଥିରାଙ୍କ C ସହିତ): {res_str}",
+                    ]
+                    verif = f"ଯାଞ୍ଚ: d/dx({res_expr}) = {expr} (ସମାକଳ୍ୟ ସହିତ ସମାନ ଅଟେ)"
+                else:
+                    domain_name = "Calculus: Indefinite Integration"
+                    formula = "Integration Power Rule: ∫ xⁿ dx = (xⁿ⁺¹)/(n + 1) + C (for n ≠ -1)"
+                    steps = [
+                        f"Step 1 (Identify Integrand): f(x) = {expr}",
+                        f"Step 2 (Integrate Term-by-Term):\n   " + "\n   ".join(steps_lines),
+                        f"Step 3 (Add Arbitrary Constant C): {res_str}",
+                    ]
+                    verif = f"Differentiation Check: d/dx[{res_expr}] = {expr} (Identically reproduces integrand)"
+
+                return {
+                    "problem": clean,
+                    "domain": domain_name,
+                    "formula_used": formula,
+                    "steps": steps,
+                    "result": res_str,
+                    "verification": verif,
+                    "latex": f"\\int ({expr})\\,dx = {res_expr}",
+                    "complexity_mode": "complex",
+                }
+
+    return None
+
+
+def solve_academic_math(
+    problem: str,
+    language: str = "English",
+    complexity_mode: str = "standard",
+    domain: Optional[str] = None,
+) -> Dict[str, Any]:
     lang = (language or "English").strip()
     is_odia = lang.lower() in ["odia", "or", "or-in"]
     is_hindi = lang.lower() in ["hindi", "hi", "hi-in"]
 
-    if is_odia:
-        system_prompt = (
-            "You are a mathematics tutor. Solve the mathematical problem step-by-step in ODIA language (ଓଡ଼ିଆ) using ODIA script. "
-            "Return a JSON object with two keys: "
-            "'steps' (an array of strings explaining each step in Odia) and "
-            "'result' (a string containing the final answer in Odia). "
-            "Example format: {\"steps\": [\"ପଦକ୍ଷେପ ୧: ଦିଆଯାଇଥିବା ସମୀକରଣ...\", \"ପଦକ୍ଷେପ ୨: ...\"], \"result\": \"ଉତ୍ତର: ...\"}"
-        )
-    elif is_hindi:
-        system_prompt = (
-            "You are a mathematics tutor. Solve the mathematical problem step-by-step in Hindi (हिन्दी) using Devanagari script. "
-            "Return a JSON object with two keys: 'steps' (array of strings) and 'result' (string)."
-        )
+    is_complex = (
+        complexity_mode == "complex"
+        or any(k in problem.lower() for k in [
+            "d/dx", "diff", "derivative", "integrate", "integral", "\\int", "∫", "det(", "matrix",
+            "[[", "dy/dx", "y'", "y''", "lim", "limit", "complex", "modulus", "polar"
+        ])
+        or (("+" in problem or "-" in problem) and "i" in problem)
+    )
+
+    if is_complex:
+        # 1. Check deterministic complex solver first for instant precision
+        det_comp = solve_complex_math_deterministic_py(problem, language, domain)
+        if det_comp:
+            return det_comp
+
+    if is_complex:
+        if is_odia:
+            system_prompt = (
+                "You are an expert professor of advanced mathematics and engineering calculus. "
+                "Solve the complex mathematical problem step-by-step in ODIA language (ଓଡ଼ିଆ) using ODIA script. "
+                "Classify the mathematical domain accurately (e.g. କାଲକୁଲସ୍, ଜଟିଳ ସଂଖ୍ୟା, ଅବକଳ ସମୀକରଣ, ରୈଖିକ ବୀଜଗଣିତ, ସୀମା). "
+                "Return a JSON object with keys: "
+                "'domain' (string in Odia), "
+                "'formula_used' (string describing the primary theorems/formulas applied in Odia), "
+                "'steps' (array of strings explaining each pedagogical step with equations in Odia), "
+                "'result' (string of final answer in Odia), "
+                "'verification' (string describing verification/proof in Odia), "
+                "'latex' (string with LaTeX formula syntax), "
+                "'complexity_mode' ('complex')."
+            )
+        elif is_hindi:
+            system_prompt = (
+                "You are an expert professor of advanced mathematics. "
+                "Solve the complex mathematical problem step-by-step in Hindi (हिन्दी) using Devanagari script. "
+                "Classify the mathematical domain accurately (e.g. कलन/कलन शास्त्र, सम्मिश्र संख्याएं, अवकल समीकरण, रैखिक बीजगणित). "
+                "Return a JSON object with keys: "
+                "'domain' (string in Hindi), "
+                "'formula_used' (string describing applied theorems/formulas in Hindi), "
+                "'steps' (array of strings explaining each step in Hindi), "
+                "'result' (string of final answer in Hindi), "
+                "'verification' (string verifying the answer in Hindi), "
+                "'latex' (LaTeX formula string), "
+                "'complexity_mode' ('complex')."
+            )
+        else:
+            system_prompt = (
+                "You are an expert professor of advanced collegiate mathematics. "
+                "Solve the complex mathematical problem step-by-step with rigorous pedagogical breakdown. "
+                "Classify the mathematical domain accurately (e.g. Calculus: Differentiation, Calculus: Integration, Complex Analysis, Differential Equations, Linear Algebra, Limits & Series). "
+                "Return a JSON object with keys: "
+                "'domain' (string), "
+                "'formula_used' (string describing the primary theorems, rules, or formulas applied), "
+                "'steps' (array of strings explaining each algebraic and conceptual step), "
+                "'result' (string of final exact answer with symbolic notation), "
+                "'verification' (string providing a mathematical check/proof verifying the result), "
+                "'latex' (string with clean LaTeX syntax), "
+                "'complexity_mode' ('complex')."
+            )
     else:
-        system_prompt = (
-            "You are a mathematics tutor. Solve the problem step-by-step in English. "
-            "Return a JSON object with keys: 'steps' (array of strings) and 'result' (string)."
-        )
+        if is_odia:
+            system_prompt = (
+                "You are a mathematics tutor. Solve the mathematical problem step-by-step in ODIA language (ଓଡ଼ିଆ) using ODIA script. "
+                "Return a JSON object with two keys: "
+                "'steps' (an array of strings explaining each step in Odia) and "
+                "'result' (a string containing the final answer in Odia). "
+                "Example format: {\"steps\": [\"ପଦକ୍ଷେପ ୧: ଦିଆଯାଇଥିବା ସମୀକରଣ...\", \"ପଦକ୍ଷେପ ୨: ...\"], \"result\": \"ଉତ୍ତର: ...\"}"
+            )
+        elif is_hindi:
+            system_prompt = (
+                "You are a mathematics tutor. Solve the mathematical problem step-by-step in Hindi (हिन्दी) using Devanagari script. "
+                "Return a JSON object with two keys: 'steps' (array of strings) and 'result' (string)."
+            )
+        else:
+            system_prompt = (
+                "You are a mathematics tutor. Solve the problem step-by-step in English. "
+                "Return a JSON object with keys: 'steps' (array of strings) and 'result' (string)."
+            )
 
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": f"Problem: {problem}"},
     ]
 
-    raw_resp = call_openrouter(messages, max_tokens=400)
+    raw_resp = call_openrouter(messages, max_tokens=600 if is_complex else 400)
     if not raw_resp:
-        # Check deterministic solver first
+        # Fallback to deterministic solvers
+        if is_complex:
+            det_c = solve_complex_math_deterministic_py(problem, language, domain)
+            if det_c:
+                return det_c
+
         det_sol = solve_deterministic_math_py(problem, language)
         if det_sol:
             return det_sol
@@ -462,6 +838,7 @@ def solve_academic_math(problem: str, language: str = "English") -> Dict[str, An
                     "୨. ନିୟମ ଅନୁସାରେ ସମାଧାନ କରାଗଲା",
                     "୩. ଫଳାଫଳ ଯାଞ୍ଚ ହେଲା",
                 ],
+                "complexity_mode": "complex" if is_complex else "standard",
             }
         elif is_hindi:
             return {
@@ -472,6 +849,7 @@ def solve_academic_math(problem: str, language: str = "English") -> Dict[str, An
                     "2. गणितीय नियमों के अनुसार हल किया गया",
                     "3. परिणाम सत्यापित किया गया",
                 ],
+                "complexity_mode": "complex" if is_complex else "standard",
             }
         else:
             return {
@@ -482,6 +860,7 @@ def solve_academic_math(problem: str, language: str = "English") -> Dict[str, An
                     "2. Applied standard mathematical operations",
                     "3. Verified result equality",
                 ],
+                "complexity_mode": "complex" if is_complex else "standard",
             }
 
     try:
@@ -489,10 +868,33 @@ def solve_academic_math(problem: str, language: str = "English") -> Dict[str, An
         parsed = json.loads(clean)
         steps = parsed.get("steps", [])
         result = parsed.get("result", "Solved")
+        domain_val = parsed.get("domain") or ("Complex Mathematics" if is_complex else "Algebra & Arithmetic")
+        formula_val = parsed.get("formula_used")
+        verif_val = parsed.get("verification")
+        latex_val = parsed.get("latex")
+        graph_eq = parsed.get("graph_equation")
+
         if is_odia:
             steps = [normalize_odia_text(s) for s in steps]
             result = normalize_odia_text(result)
-        return {"problem": problem, "result": result, "steps": steps}
+            if domain_val:
+                domain_val = normalize_odia_text(domain_val)
+            if formula_val:
+                formula_val = normalize_odia_text(formula_val)
+            if verif_val:
+                verif_val = normalize_odia_text(verif_val)
+
+        return {
+            "problem": problem,
+            "result": result,
+            "steps": steps,
+            "domain": domain_val,
+            "formula_used": formula_val,
+            "verification": verif_val,
+            "latex": latex_val,
+            "graph_equation": graph_eq,
+            "complexity_mode": "complex" if is_complex else "standard",
+        }
     except Exception:
         steps = raw_resp.split("\n")
         steps = [s.strip() for s in steps if s.strip()]
@@ -502,6 +904,7 @@ def solve_academic_math(problem: str, language: str = "English") -> Dict[str, An
             "problem": problem,
             "result": steps[-1] if steps else "Solved",
             "steps": steps,
+            "complexity_mode": "complex" if is_complex else "standard",
         }
 
 

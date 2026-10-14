@@ -38,9 +38,12 @@ import {
   Ear,
   Brain,
   Sliders,
+  CheckCircle2,
+  Code2,
+  GraduationCap,
 } from 'lucide-react';
 import type { User, ItemStats, FlashcardItem, LearningActivity, ActivityType, DailyVoiceTopic } from '../types';
-import { api, logLearningActivity, loadAllLearningActivities } from '../api';
+import { api, logLearningActivity, loadAllLearningActivities, type MathSolutionResponse } from '../api';
 import {
   getUserItem,
   setUserItem,
@@ -742,12 +745,11 @@ export function AcademicSolverPage({
 
   // Math Solver State
   const [mathInput, setMathInput] = useState<string>('2x + 8 = 20');
-  const [mathSolution, setMathSolution] = useState<{
-    problem: string;
-    result: string;
-    steps: string[];
-  } | null>(null);
+  const [mathSolution, setMathSolution] = useState<MathSolutionResponse | null>(null);
   const [isSolving, setIsSolving] = useState<boolean>(false);
+  const [mathComplexityMode, setMathComplexityMode] = useState<'standard' | 'complex'>('standard');
+  const [complexDomain, setComplexDomain] = useState<'all' | 'calculus' | 'complex_numbers' | 'ode' | 'linear_algebra' | 'limits'>('all');
+  const [copiedLatex, setCopiedLatex] = useState<boolean>(false);
 
   // Ask Question State
   const [questionInput, setQuestionInput] = useState<string>('');
@@ -1704,15 +1706,23 @@ Passage: (The 2-3 spoken sentences)`;
     }
   };
 
-  // Solve a math problem using OpenRouter AI
-  const handleSolveMath = async (customProblem?: string, customLang?: 'English' | 'Hindi' | 'Odia') => {
+  // Solve a math problem using OpenRouter AI / ATLAS Backend / Offline Engine
+  const handleSolveMath = async (
+    customProblem?: string,
+    customLang?: 'English' | 'Hindi' | 'Odia',
+    customComplexity?: 'standard' | 'complex',
+    customDomain?: string
+  ) => {
     const raw = (customProblem ?? mathInput).trim();
     if (!raw || isSolving) return;
 
     const langToUse = customLang || selectedLanguage;
+    const modeToUse = customComplexity || mathComplexityMode;
+    const domainToUse = customDomain || (complexDomain !== 'all' ? complexDomain : undefined);
+
     setIsSolving(true);
     try {
-      const solution = await api.solveMath(raw, langToUse);
+      const solution = await api.solveMath(raw, langToUse, modeToUse, domainToUse);
       setMathSolution(solution);
       setProblemsSolved((prev) => {
         const next = prev + 1;
@@ -1728,8 +1738,8 @@ Passage: (The 2-3 spoken sentences)`;
       logLearningActivity({
         activity_type: 'math',
         title: raw,
-        details: solution.result ? `Result: ${solution.result}` : 'Math problem solved',
-        solution: `${solution.result}\n\nStep-by-Step:\n${(solution.steps || []).join('\n')}`,
+        details: solution.domain ? `${solution.domain} • ${solution.result}` : (solution.result ? `Result: ${solution.result}` : 'Math problem solved'),
+        solution: `${solution.result}\n\nStep-by-Step:\n${(solution.steps || []).join('\n')}${solution.verification ? `\n\nVerification: ${solution.verification}` : ''}`,
         language: langToUse,
       });
     } catch (err) {
@@ -1743,6 +1753,7 @@ Passage: (The 2-3 spoken sentences)`;
           '2. Applied order of operations and isolated variable',
           '3. Verified algebraic equality',
         ],
+        complexity_mode: modeToUse,
       });
 
       logLearningActivity({
@@ -3048,7 +3059,7 @@ Passage: (The 2-3 spoken sentences)`;
               <div className="subview-header">
                 <div>
                   <h2 className="academic-section-heading">Solve a Mathematics Problem</h2>
-                  <p className="subview-subtitle">Exact, checked, spoken steps with algebraic verification</p>
+                  <p className="subview-subtitle">Exact, checked, spoken steps with algebraic verification & complex mathematical reasoning</p>
                 </div>
                 <button
                   type="button"
@@ -3059,10 +3070,217 @@ Passage: (The 2-3 spoken sentences)`;
                 </button>
               </div>
 
+              {/* MATHEMATICS COMPLEXITY MODE SWITCHER */}
+              <div className="math-mode-switcher-container">
+                <button
+                  type="button"
+                  className={`btn-math-mode-pill ${mathComplexityMode === 'standard' ? 'active' : ''}`}
+                  onClick={() => {
+                    setMathComplexityMode('standard');
+                    if (mathInput.includes('d/dx') || mathInput.includes('∫') || mathInput.includes('det(')) {
+                      setMathInput('2x + 8 = 20');
+                    }
+                  }}
+                >
+                  <GraduationCap size={16} />
+                  <span>Standard Algebra & Arithmetic</span>
+                </button>
+                <button
+                  type="button"
+                  className={`btn-math-mode-pill ${mathComplexityMode === 'complex' ? 'active' : ''}`}
+                  onClick={() => {
+                    setMathComplexityMode('complex');
+                    if (mathInput === '2x + 8 = 20') {
+                      setMathInput('d/dx (x^3 * sin(x) + e^(2x))');
+                    }
+                  }}
+                >
+                  <Sparkles size={16} />
+                  <span>Complex Mathematics Suite</span>
+                  <span className="badge-complex-math-new">Calculus • Complex • ODE • Matrices</span>
+                </button>
+              </div>
+
+              {/* COMPLEX DOMAIN FILTERS (When in Complex Math Mode) */}
+              {mathComplexityMode === 'complex' && (
+                <div className="complex-domain-pills">
+                  <button
+                    type="button"
+                    className={`btn-domain-pill ${complexDomain === 'all' ? 'active' : ''}`}
+                    onClick={() => setComplexDomain('all')}
+                  >
+                    🌟 All Domains
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn-domain-pill ${complexDomain === 'calculus' ? 'active' : ''}`}
+                    onClick={() => {
+                      setComplexDomain('calculus');
+                      setMathInput('d/dx (x^3 * sin(x) + e^(2x))');
+                    }}
+                  >
+                    📈 Calculus (d/dx & ∫)
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn-domain-pill ${complexDomain === 'complex_numbers' ? 'active' : ''}`}
+                    onClick={() => {
+                      setComplexDomain('complex_numbers');
+                      setMathInput('(3 + 4i) / (1 - 2i)');
+                    }}
+                  >
+                    🔮 Complex Numbers (z = a + bi)
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn-domain-pill ${complexDomain === 'ode' ? 'active' : ''}`}
+                    onClick={() => {
+                      setComplexDomain('ode');
+                      setMathInput('dy/dx + 2y = 4, y(0)=1');
+                    }}
+                  >
+                    ⚙️ Differential Equations (dy/dx)
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn-domain-pill ${complexDomain === 'linear_algebra' ? 'active' : ''}`}
+                    onClick={() => {
+                      setComplexDomain('linear_algebra');
+                      setMathInput('det([[4, 7], [2, 6]])');
+                    }}
+                  >
+                    🧊 Linear Algebra (Matrices & det)
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn-domain-pill ${complexDomain === 'limits' ? 'active' : ''}`}
+                    onClick={() => {
+                      setComplexDomain('limits');
+                      setMathInput('lim_(x→0) (sin(x)/x)');
+                    }}
+                  >
+                    ♾️ Limits & Series
+                  </button>
+                </div>
+              )}
+
+              {/* QUICK MATHEMATICAL FORMULA KEYPAD (When in Complex Math Mode) */}
+              {mathComplexityMode === 'complex' && (
+                <div className="complex-math-keypad">
+                  <span className="keypad-label">Quick Insert:</span>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + 'd/dx ')}
+                    title="Insert Derivative Operator"
+                  >
+                    d/dx
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + '∫ ')}
+                    title="Insert Integral Symbol"
+                  >
+                    ∫
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + 'dy/dx ')}
+                    title="Insert Differential Equation Term"
+                  >
+                    dy/dx
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + 'i')}
+                    title="Insert Imaginary Unit i"
+                  >
+                    i
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + 'z = ')}
+                    title="Insert Complex Variable z"
+                  >
+                    z =
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + 'det([[a,b],[c,d]])')}
+                    title="Insert Matrix Determinant"
+                  >
+                    det(M)
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + 'lim_(x→0) ')}
+                    title="Insert Limit Notation"
+                  >
+                    lim
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + '√(')}
+                    title="Insert Square Root"
+                  >
+                    √
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + 'π')}
+                    title="Insert Pi (3.14159...)"
+                  >
+                    π
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + 'e^(')}
+                    title="Insert Exponential"
+                  >
+                    e^x
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + 'sin(')}
+                    title="Insert Sine"
+                  >
+                    sin
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + 'cos(')}
+                    title="Insert Cosine"
+                  >
+                    cos
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-keypad-pill"
+                    onClick={() => setMathInput((prev) => prev + '^')}
+                    title="Insert Power"
+                  >
+                    ^
+                  </button>
+                </div>
+              )}
+
               <div className="solver-input-section">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                   <label className="solver-input-label" style={{ marginBottom: 0 }}>
-                    Enter equation, fraction, or arithmetic problem:
+                    {mathComplexityMode === 'complex'
+                      ? 'Enter advanced problem (Calculus, Complex numbers, ODEs, Matrices):'
+                      : 'Enter equation, fraction, or arithmetic problem:'}
                   </label>
                   <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                     <button
@@ -3109,7 +3327,11 @@ Passage: (The 2-3 spoken sentences)`;
                     className="academic-input-field"
                     value={mathInput}
                     onChange={(e) => setMathInput(e.target.value)}
-                    placeholder="e.g. 2x + 8 = 20 or (14 * 3) / 2"
+                    placeholder={
+                      mathComplexityMode === 'complex'
+                        ? 'e.g. d/dx (x^3 * sin(x)) or (3 + 4i)/(1 - 2i) or det([[4, 7], [2, 6]])'
+                        : 'e.g. 2x + 8 = 20 or (14 * 3) / 2'
+                    }
                   />
                   <button
                     type="button"
@@ -3120,10 +3342,10 @@ Passage: (The 2-3 spoken sentences)`;
                     {isSolving ? (
                       <>
                         <Loader2 size={16} className="animate-spin mr-1" />
-                        Solving with AI...
+                        {mathComplexityMode === 'complex' ? 'Computing Rigorous Solution...' : 'Solving with AI...'}
                       </>
                     ) : (
-                      'Solve Steps'
+                      mathComplexityMode === 'complex' ? 'Solve Complex Math' : 'Solve Steps'
                     )}
                   </button>
                 </div>
@@ -3139,50 +3361,162 @@ Passage: (The 2-3 spoken sentences)`;
                   />
                 )}
 
+                {/* SAMPLES BASED ON COMPLEXITY MODE */}
                 <div className="sample-chips-row">
                   <span>Try samples: </span>
-                  <button
-                    type="button"
-                    className="sample-chip"
-                    onClick={() => {
-                      setMathInput('2x + 8 = 20');
-                      handleSolveMath('2x + 8 = 20');
-                    }}
-                  >
-                    2x + 8 = 20
-                  </button>
-                  <button
-                    type="button"
-                    className="sample-chip"
-                    onClick={() => {
-                      setMathInput('x^2 - 5x + 6 = 0');
-                      handleSolveMath('x^2 - 5x + 6 = 0');
-                    }}
-                  >
-                    Quadratic Equation
-                  </button>
-                  <button
-                    type="button"
-                    className="sample-chip"
-                    onClick={() => {
-                      setMathInput('(3/4) + (5/6)');
-                      handleSolveMath('(3/4) + (5/6)');
-                    }}
-                  >
-                    Fractions: 3/4 + 5/6
-                  </button>
+                  {mathComplexityMode === 'complex' ? (
+                    <>
+                      <button
+                        type="button"
+                        className="sample-chip"
+                        onClick={() => {
+                          const p = 'd/dx (x^3 * sin(x) + e^(2x))';
+                          setMathInput(p);
+                          handleSolveMath(p, selectedLanguage, 'complex', 'calculus');
+                        }}
+                      >
+                        Derivative: d/dx (x³·sin(x))
+                      </button>
+                      <button
+                        type="button"
+                        className="sample-chip"
+                        onClick={() => {
+                          const p = '∫ (3x^2 + 4x - 5) dx';
+                          setMathInput(p);
+                          handleSolveMath(p, selectedLanguage, 'complex', 'calculus');
+                        }}
+                      >
+                        Integral: ∫ (3x² + 4x - 5) dx
+                      </button>
+                      <button
+                        type="button"
+                        className="sample-chip"
+                        onClick={() => {
+                          const p = '(3 + 4i) / (1 - 2i)';
+                          setMathInput(p);
+                          handleSolveMath(p, selectedLanguage, 'complex', 'complex_numbers');
+                        }}
+                      >
+                        Complex Div: (3 + 4i)/(1 - 2i)
+                      </button>
+                      <button
+                        type="button"
+                        className="sample-chip"
+                        onClick={() => {
+                          const p = 'z^2 + 4z + 13 = 0';
+                          setMathInput(p);
+                          handleSolveMath(p, selectedLanguage, 'complex', 'complex_numbers');
+                        }}
+                      >
+                        Complex Roots: z² + 4z + 13 = 0
+                      </button>
+                      <button
+                        type="button"
+                        className="sample-chip"
+                        onClick={() => {
+                          const p = 'dy/dx + 2y = 4, y(0)=1';
+                          setMathInput(p);
+                          handleSolveMath(p, selectedLanguage, 'complex', 'ode');
+                        }}
+                      >
+                        ODE: dy/dx + 2y = 4
+                      </button>
+                      <button
+                        type="button"
+                        className="sample-chip"
+                        onClick={() => {
+                          const p = 'det([[4, 7], [2, 6]])';
+                          setMathInput(p);
+                          handleSolveMath(p, selectedLanguage, 'complex', 'linear_algebra');
+                        }}
+                      >
+                        Matrix: det([[4,7],[2,6]])
+                      </button>
+                      <button
+                        type="button"
+                        className="sample-chip"
+                        onClick={() => {
+                          const p = 'lim_(x→0) (sin(x)/x)';
+                          setMathInput(p);
+                          handleSolveMath(p, selectedLanguage, 'complex', 'limits');
+                        }}
+                      >
+                        Limit: lim (sin(x)/x)
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="sample-chip"
+                        onClick={() => {
+                          setMathInput('2x + 8 = 20');
+                          handleSolveMath('2x + 8 = 20', selectedLanguage, 'standard');
+                        }}
+                      >
+                        2x + 8 = 20
+                      </button>
+                      <button
+                        type="button"
+                        className="sample-chip"
+                        onClick={() => {
+                          setMathInput('x^2 - 5x + 6 = 0');
+                          handleSolveMath('x^2 - 5x + 6 = 0', selectedLanguage, 'standard');
+                        }}
+                      >
+                        Quadratic Equation
+                      </button>
+                      <button
+                        type="button"
+                        className="sample-chip"
+                        onClick={() => {
+                          setMathInput('(3/4) + (5/6)');
+                          handleSolveMath('(3/4) + (5/6)', selectedLanguage, 'standard');
+                        }}
+                      >
+                        Fractions: 3/4 + 5/6
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
               {mathSolution && (
-                <div className="solution-result-panel">
+                <div className={`solution-result-panel ${mathSolution.complexity_mode === 'complex' || mathSolution.domain ? 'complex-solution-panel' : ''}`}>
                   <div className="solution-header">
-                    <span className="solution-badge">Verified Solution</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span className="solution-badge">
+                        {mathSolution.complexity_mode === 'complex' || mathSolution.domain
+                          ? '🔬 Verified Complex Solution'
+                          : 'Verified Solution'}
+                      </span>
+                      {mathSolution.domain && (
+                        <span className="badge-complex-domain">
+                          {mathSolution.domain}
+                        </span>
+                      )}
+                    </div>
                     <h3 className="solution-result-text">Answer: {mathSolution.result}</h3>
                   </div>
 
+                  {/* FORMULAS & THEOREMS APPLIED (For Complex Solutions) */}
+                  {mathSolution.formula_used && (
+                    <div className="complex-formula-used-card">
+                      <div className="complex-formula-header">
+                        <BookOpen size={16} />
+                        <span>Theorems & Formulas Applied</span>
+                      </div>
+                      <p className="complex-formula-body">{mathSolution.formula_used}</p>
+                    </div>
+                  )}
+
+                  {/* RIGOROUS DERIVATION STEPS */}
                   <div className="solution-steps-list">
-                    <h4 className="steps-title">Step-by-Step Breakdown:</h4>
+                    <h4 className="steps-title">
+                      {mathSolution.complexity_mode === 'complex'
+                        ? 'Rigorous Step-by-Step Derivation:'
+                        : 'Step-by-Step Breakdown:'}
+                    </h4>
                     {mathSolution.steps.map((st, i) => (
                       <div key={i} className="solution-step-item">
                         <CheckCircle size={16} className="step-check-icon" />
@@ -3190,6 +3524,43 @@ Passage: (The 2-3 spoken sentences)`;
                       </div>
                     ))}
                   </div>
+
+                  {/* MATHEMATICAL VERIFICATION & PROOF */}
+                  {mathSolution.verification && (
+                    <div className="complex-verification-card">
+                      <div className="complex-verification-header">
+                        <CheckCircle2 size={16} />
+                        <span>Mathematical Verification & Proof Check</span>
+                      </div>
+                      <p className="complex-verification-body">{mathSolution.verification}</p>
+                    </div>
+                  )}
+
+                  {/* LATEX CODE BLOCK & ONE-CLICK COPY */}
+                  {mathSolution.latex && (
+                    <div className="complex-latex-box">
+                      <div className="complex-latex-header">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Code2 size={15} style={{ color: '#06b6d4' }} />
+                          <span>LaTeX Syntax (Academic Publication)</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-copy-latex"
+                          onClick={() => {
+                            navigator.clipboard.writeText(mathSolution.latex || '');
+                            setCopiedLatex(true);
+                            setTimeout(() => setCopiedLatex(false), 2000);
+                          }}
+                          title="Copy LaTeX formula to clipboard"
+                        >
+                          {copiedLatex ? <Check size={14} style={{ color: '#10b981' }} /> : <Copy size={14} />}
+                          <span>{copiedLatex ? 'Copied LaTeX!' : 'Copy LaTeX'}</span>
+                        </button>
+                      </div>
+                      <code className="complex-latex-code">{mathSolution.latex}</code>
+                    </div>
+                  )}
 
                   <div className="solution-voice-toolbar" style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     {(() => {
