@@ -44,8 +44,31 @@ def save_dataset(data: List[Dict[str, Any]]) -> None:
     print(f"✓ Saved {len(data)} problems to: {DATASET_FILE}")
 
 
+def generate_anti_overfitting_variations(question: str) -> List[str]:
+    """
+    Generate linguistic permutations to prevent model from memorizing exact question text (anti-overfitting).
+    """
+    variations = [question]
+    q_clean = question.strip()
+
+    # Prefixes for math/physics/chemistry
+    prefixes = [
+        "Please provide a rigorous, step-by-step solution for: ",
+        "Solve the following academic problem with complete mathematical formulas: ",
+        "Explain and calculate the step-by-step solution to: "
+    ]
+
+    for p in prefixes:
+        # Create non-redundant variation
+        if not q_clean.lower().startswith("solve") and not q_clean.lower().startswith("please"):
+            variations.append(f"{p}{q_clean}")
+            break
+
+    return variations
+
+
 def export_finetuning_jsonl(split_ratio: float = 0.8) -> None:
-    """Export the dataset to JSONL format compatible with OpenAI and HuggingFace fine-tuning."""
+    """Export the dataset with anti-overfitting augmentation and training hyperparameters."""
     dataset = load_dataset()
     if not dataset:
         print("[Error] No dataset found to export.")
@@ -55,6 +78,7 @@ def export_finetuning_jsonl(split_ratio: float = 0.8) -> None:
     openai_train_file = OUTPUT_DIR / "atlas_finetune_openai_train.jsonl"
     openai_val_file = OUTPUT_DIR / "atlas_finetune_openai_val.jsonl"
     hf_alpaca_file = OUTPUT_DIR / "atlas_finetune_alpaca.jsonl"
+    config_file = OUTPUT_DIR / "anti_overfitting_config.json"
 
     openai_records = []
     hf_records = []
@@ -67,28 +91,30 @@ def export_finetuning_jsonl(split_ratio: float = 0.8) -> None:
         result = item.get("result", "")
         solution_body = f"{steps}\n\n**Final Answer:** {result}"
 
-        # 1. English Instruction Pair
+        # 1. English Instruction Pairs with Anti-Overfitting Perturbation
         en_q = item.get("question")
         if en_q:
-            sys_prompt = (
-                f"You are the Advanced Academic Problem Solver in ATLAS 2.0. "
-                f"Solve this {subject} problem ({topic}) with complete mathematical rigor, "
-                f"verified formulas, and clear numbered steps."
-            )
-            openai_records.append({
-                "messages": [
-                    {"role": "system", "content": sys_prompt},
-                    {"role": "user", "content": en_q},
-                    {"role": "assistant", "content": solution_body}
-                ]
-            })
-            hf_records.append({
-                "instruction": f"Solve the following {subject} problem step-by-step with complete formulas.",
-                "input": en_q,
-                "output": solution_body
-            })
+            variations = generate_anti_overfitting_variations(en_q)
+            for v_q in variations:
+                sys_prompt = (
+                    f"You are the Advanced Academic Problem Solver in ATLAS 2.0. "
+                    f"Solve this {subject} problem ({topic}) with complete mathematical rigor, "
+                    f"verified formulas, and clear numbered steps."
+                )
+                openai_records.append({
+                    "messages": [
+                        {"role": "system", "content": sys_prompt},
+                        {"role": "user", "content": v_q},
+                        {"role": "assistant", "content": solution_body}
+                    ]
+                })
+                hf_records.append({
+                    "instruction": f"Solve the following {subject} problem step-by-step with complete formulas.",
+                    "input": v_q,
+                    "output": solution_body
+                })
 
-        # 2. Odia Instruction Pair (if available)
+        # 2. Odia Instruction Pair
         odia_q = item.get("question_odia")
         if odia_q:
             sys_prompt_or = (
@@ -103,7 +129,7 @@ def export_finetuning_jsonl(split_ratio: float = 0.8) -> None:
                 ]
             })
 
-        # 3. Hindi Instruction Pair (if available)
+        # 3. Hindi Instruction Pair
         hi_q = item.get("question_hindi")
         if hi_q:
             sys_prompt_hi = (
@@ -118,7 +144,7 @@ def export_finetuning_jsonl(split_ratio: float = 0.8) -> None:
                 ]
             })
 
-    # Shuffle for train/eval split
+    # Shuffle with fixed seed for reproducible train/val split
     random.seed(42)
     random.shuffle(openai_records)
     split_idx = int(len(openai_records) * split_ratio)
@@ -133,6 +159,37 @@ def export_finetuning_jsonl(split_ratio: float = 0.8) -> None:
     with open(openai_val_file, "w", encoding="utf-8") as f:
         for r in val_data:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+    with open(hf_alpaca_file, "w", encoding="utf-8") as f:
+        for r in hf_records:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+    # Anti-Overfitting Hyperparameter Recommendations
+    anti_overfitting_config = {
+        "anti_overfitting_framework": "ATLAS 2.0 Regularized Fine-Tuning Spec",
+        "recommended_hyperparameters": {
+            "n_epochs": 2,
+            "rationale_epochs": "Prevents catastrophic memorization and validation loss divergence on specialized academic datasets.",
+            "learning_rate": 1.5e-5,
+            "lr_scheduler_type": "cosine",
+            "warmup_ratio": 0.1,
+            "weight_decay": 0.1,
+            "rationale_weight_decay": "L2 regularization penalizing large weights to enforce generalized mathematical problem-solving.",
+            "gradient_accumulation_steps": 4,
+            "early_stopping_patience": 2,
+            "max_grad_norm": 1.0,
+            "dropout_rate": 0.05
+        },
+        "dataset_metadata": {
+            "total_augmented_samples": len(openai_records),
+            "train_samples": len(train_data),
+            "validation_samples": len(val_data),
+            "train_val_split": f"{int(split_ratio * 100)}/{int((1 - split_ratio) * 100)}"
+        }
+    }
+
+    with open(config_file, "w", encoding="utf-8") as f:
+        json.dump(anti_overfitting_config, f, indent=2, ensure_ascii=False)
 
     with open(hf_alpaca_file, "w", encoding="utf-8") as f:
         for r in hf_records:
