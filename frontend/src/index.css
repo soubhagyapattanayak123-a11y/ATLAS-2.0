@@ -16133,13 +16133,13 @@ body[data-theme="amber"],
   transform: translateX(-50%);
   max-width: 920px;
   width: calc(100% - 48px);
-  background: rgba(15, 23, 42, 0.96);
+  background: #ffffff;
   backdrop-filter: blur(20px);
-  border: 2px solid #38bdf8;
+  border: 2px solid #2563eb;
   border-radius: 16px;
   padding: 0.85rem 1.25rem;
   z-index: 99998;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5), 0 0 25px rgba(56, 189, 248, 0.25);
+  box-shadow: 0 16px 45px rgba(37, 99, 235, 0.18), 0 4px 14px rgba(15, 23, 42, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -16147,6 +16147,7 @@ body[data-theme="amber"],
   box-sizing: border-box;
   animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   transition: all 0.25s ease;
+  color: #0f172a;
 }
 
 @keyframes slideUpFade {
@@ -16160,7 +16161,7 @@ body[data-theme="amber"],
   gap: 0.75rem;
   flex: 1;
   min-width: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .caption-badge {
@@ -16174,9 +16175,9 @@ body[data-theme="amber"],
   border-radius: 6px;
   flex-shrink: 0;
   text-transform: uppercase;
-  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  background: #2563eb;
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
 }
 
 .caption-speaker {
@@ -16184,14 +16185,14 @@ body[data-theme="amber"],
   font-size: 0.98rem;
   flex-shrink: 0;
   letter-spacing: 0.01em;
-  color: #38bdf8;
+  color: #1d4ed8;
 }
 
 .caption-text {
   font-weight: 600;
   font-size: 1.05rem;
-  line-height: 1.5;
-  color: #f8fafc;
+  line-height: 1.45;
+  color: #0f172a;
   word-break: break-word;
 }
 
@@ -16202,12 +16203,12 @@ body[data-theme="amber"],
 
 .atlas-closed-captions-dock.caption-size-large .caption-text {
   font-size: 1.3rem;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
 .atlas-closed-captions-dock.caption-size-xlarge .caption-text {
-  font-size: 1.6rem;
-  line-height: 1.7;
+  font-size: 1.55rem;
+  line-height: 1.65;
   font-weight: 700;
 }
 
@@ -16216,13 +16217,14 @@ body[data-theme="amber"],
   align-items: center;
   gap: 0.45rem;
   flex-shrink: 0;
+  margin-left: 0.75rem;
 }
 
 .btn-caption-size {
-  min-width: 32px;
+  min-width: 34px;
   height: 32px;
-  padding: 0 0.5rem;
-  border-radius: 8px;
+  padding: 0 0.55rem;
+  border-radius: 6px;
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
@@ -16231,27 +16233,27 @@ body[data-theme="amber"],
   justify-content: center;
   transition: all 0.2s ease;
   font-family: inherit;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  color: #e2e8f0;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
 }
 
 .btn-caption-size:hover {
-  background: rgba(56, 189, 248, 0.2);
-  color: #ffffff;
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 .btn-caption-size.active {
-  background: #38bdf8;
-  color: #0f172a;
-  border-color: #38bdf8;
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
   font-weight: 800;
 }
 
 .btn-caption-close {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -16259,321 +16261,573 @@ body[data-theme="amber"],
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .btn-caption-close:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
+  color: #0f172a;
+  background: #f1f5f9;
 }
 
 /* ========================================================================= */
 /* CLOSED CAPTIONS THEME-SPECIFIC OVERRIDES FOR ALL THEMES                   */
 /* ========================================================================= */
 
-/* 1. LIGHT ACADEMIC THEME */
+/* 1. LIGHT ACADEMIC THEME (GUARANTEED ULTRA-HIGH CONTRAST) */
+.atlas-closed-captions-dock.theme-light,
+.atlas-closed-captions-dock[data-theme="light"],
 html.theme-light .atlas-closed-captions-dock,
 body[data-theme="light"] .atlas-closed-captions-dock,
-.theme-light .atlas-closed-captions-dock {
+.theme-light .atlas-closed-captions-dock,
+.academic-app-wrapper.theme-light .atlas-closed-captions-dock {
   background: #ffffff !important;
-  border: 2.5px solid #1d4ed8 !important;
-  box-shadow: 0 16px 45px rgba(29, 78, 216, 0.2), 0 4px 14px rgba(15, 23, 42, 0.1) !important;
+  border: 2px solid #2563eb !important;
+  box-shadow: 0 16px 45px rgba(37, 99, 235, 0.2), 0 4px 14px rgba(15, 23, 42, 0.08) !important;
+  color: #0f172a !important;
 }
 
+.atlas-closed-captions-dock.theme-light .caption-badge,
+.atlas-closed-captions-dock[data-theme="light"] .caption-badge,
 html.theme-light .atlas-closed-captions-dock .caption-badge,
 body[data-theme="light"] .atlas-closed-captions-dock .caption-badge,
-.theme-light .atlas-closed-captions-dock .caption-badge {
-  background: #1d4ed8 !important;
+.theme-light .atlas-closed-captions-dock .caption-badge,
+.academic-app-wrapper.theme-light .atlas-closed-captions-dock .caption-badge {
+  background: #2563eb !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
 }
 
+.atlas-closed-captions-dock.theme-light .caption-speaker,
+.atlas-closed-captions-dock[data-theme="light"] .caption-speaker,
 html.theme-light .atlas-closed-captions-dock .caption-speaker,
 body[data-theme="light"] .atlas-closed-captions-dock .caption-speaker,
-.theme-light .atlas-closed-captions-dock .caption-speaker {
+.theme-light .atlas-closed-captions-dock .caption-speaker,
+.academic-app-wrapper.theme-light .atlas-closed-captions-dock .caption-speaker {
   color: #1d4ed8 !important;
   font-weight: 800 !important;
 }
 
+.atlas-closed-captions-dock.theme-light .caption-text,
+.atlas-closed-captions-dock[data-theme="light"] .caption-text,
 html.theme-light .atlas-closed-captions-dock .caption-text,
 body[data-theme="light"] .atlas-closed-captions-dock .caption-text,
-.theme-light .atlas-closed-captions-dock .caption-text {
+.theme-light .atlas-closed-captions-dock .caption-text,
+.academic-app-wrapper.theme-light .atlas-closed-captions-dock .caption-text {
   color: #0f172a !important;
   font-weight: 600 !important;
 }
 
+.atlas-closed-captions-dock.theme-light .btn-caption-size,
+.atlas-closed-captions-dock[data-theme="light"] .btn-caption-size,
 html.theme-light .atlas-closed-captions-dock .btn-caption-size,
 body[data-theme="light"] .atlas-closed-captions-dock .btn-caption-size,
-.theme-light .atlas-closed-captions-dock .btn-caption-size {
+.theme-light .atlas-closed-captions-dock .btn-caption-size,
+.academic-app-wrapper.theme-light .atlas-closed-captions-dock .btn-caption-size {
   background: #f1f5f9 !important;
   border: 1px solid #cbd5e1 !important;
   color: #1e293b !important;
 }
 
+.atlas-closed-captions-dock.theme-light .btn-caption-size:hover,
+.atlas-closed-captions-dock[data-theme="light"] .btn-caption-size:hover,
 html.theme-light .atlas-closed-captions-dock .btn-caption-size:hover,
 body[data-theme="light"] .atlas-closed-captions-dock .btn-caption-size:hover,
-.theme-light .atlas-closed-captions-dock .btn-caption-size:hover {
+.theme-light .atlas-closed-captions-dock .btn-caption-size:hover,
+.academic-app-wrapper.theme-light .atlas-closed-captions-dock .btn-caption-size:hover {
   background: #e2e8f0 !important;
   color: #0f172a !important;
 }
 
+.atlas-closed-captions-dock.theme-light .btn-caption-size.active,
+.atlas-closed-captions-dock[data-theme="light"] .btn-caption-size.active,
 html.theme-light .atlas-closed-captions-dock .btn-caption-size.active,
 body[data-theme="light"] .atlas-closed-captions-dock .btn-caption-size.active,
-.theme-light .atlas-closed-captions-dock .btn-caption-size.active {
-  background: #1d4ed8 !important;
-  border-color: #1d4ed8 !important;
+.theme-light .atlas-closed-captions-dock .btn-caption-size.active,
+.academic-app-wrapper.theme-light .atlas-closed-captions-dock .btn-caption-size.active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
   color: #ffffff !important;
+  font-weight: 800 !important;
 }
 
+.atlas-closed-captions-dock.theme-light .btn-caption-close,
+.atlas-closed-captions-dock[data-theme="light"] .btn-caption-close,
 html.theme-light .atlas-closed-captions-dock .btn-caption-close,
 body[data-theme="light"] .atlas-closed-captions-dock .btn-caption-close,
-.theme-light .atlas-closed-captions-dock .btn-caption-close {
+.theme-light .atlas-closed-captions-dock .btn-caption-close,
+.academic-app-wrapper.theme-light .atlas-closed-captions-dock .btn-caption-close {
   color: #64748b !important;
 }
 
+.atlas-closed-captions-dock.theme-light .btn-caption-close:hover,
+.atlas-closed-captions-dock[data-theme="light"] .btn-caption-close:hover,
 html.theme-light .atlas-closed-captions-dock .btn-caption-close:hover,
 body[data-theme="light"] .atlas-closed-captions-dock .btn-caption-close:hover,
-.theme-light .atlas-closed-captions-dock .btn-caption-close:hover {
+.theme-light .atlas-closed-captions-dock .btn-caption-close:hover,
+.academic-app-wrapper.theme-light .atlas-closed-captions-dock .btn-caption-close:hover {
   background: #f1f5f9 !important;
   color: #0f172a !important;
 }
 
-/* 2. CYBERPUNK GLOW THEME */
+/* 2. COSMIC DARK THEME */
+.atlas-closed-captions-dock.theme-dark,
+.atlas-closed-captions-dock[data-theme="dark"],
+html.theme-dark .atlas-closed-captions-dock,
+body[data-theme="dark"] .atlas-closed-captions-dock,
+.theme-dark .atlas-closed-captions-dock,
+.academic-app-wrapper.theme-dark .atlas-closed-captions-dock {
+  background: rgba(15, 23, 42, 0.96) !important;
+  border: 2px solid #38bdf8 !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55), 0 0 25px rgba(56, 189, 248, 0.25) !important;
+  color: #f8fafc !important;
+}
+
+.atlas-closed-captions-dock.theme-dark .caption-badge,
+.atlas-closed-captions-dock[data-theme="dark"] .caption-badge,
+html.theme-dark .atlas-closed-captions-dock .caption-badge,
+body[data-theme="dark"] .atlas-closed-captions-dock .caption-badge,
+.theme-dark .atlas-closed-captions-dock .caption-badge,
+.academic-app-wrapper.theme-dark .atlas-closed-captions-dock .caption-badge {
+  background: linear-gradient(135deg, #0284c7, #38bdf8) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
+}
+
+.atlas-closed-captions-dock.theme-dark .caption-speaker,
+.atlas-closed-captions-dock[data-theme="dark"] .caption-speaker,
+html.theme-dark .atlas-closed-captions-dock .caption-speaker,
+body[data-theme="dark"] .atlas-closed-captions-dock .caption-speaker,
+.theme-dark .atlas-closed-captions-dock .caption-speaker,
+.academic-app-wrapper.theme-dark .atlas-closed-captions-dock .caption-speaker {
+  color: #38bdf8 !important;
+  font-weight: 800 !important;
+}
+
+.atlas-closed-captions-dock.theme-dark .caption-text,
+.atlas-closed-captions-dock[data-theme="dark"] .caption-text,
+html.theme-dark .atlas-closed-captions-dock .caption-text,
+body[data-theme="dark"] .atlas-closed-captions-dock .caption-text,
+.theme-dark .atlas-closed-captions-dock .caption-text,
+.academic-app-wrapper.theme-dark .atlas-closed-captions-dock .caption-text {
+  color: #f8fafc !important;
+  font-weight: 600 !important;
+}
+
+.atlas-closed-captions-dock.theme-dark .btn-caption-size,
+.atlas-closed-captions-dock[data-theme="dark"] .btn-caption-size,
+html.theme-dark .atlas-closed-captions-dock .btn-caption-size,
+body[data-theme="dark"] .atlas-closed-captions-dock .btn-caption-size,
+.theme-dark .atlas-closed-captions-dock .btn-caption-size,
+.academic-app-wrapper.theme-dark .atlas-closed-captions-dock .btn-caption-size {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  color: #e2e8f0 !important;
+}
+
+.atlas-closed-captions-dock.theme-dark .btn-caption-size:hover,
+.atlas-closed-captions-dock[data-theme="dark"] .btn-caption-size:hover,
+html.theme-dark .atlas-closed-captions-dock .btn-caption-size:hover,
+body[data-theme="dark"] .atlas-closed-captions-dock .btn-caption-size:hover,
+.theme-dark .atlas-closed-captions-dock .btn-caption-size:hover,
+.academic-app-wrapper.theme-dark .atlas-closed-captions-dock .btn-caption-size:hover {
+  background: rgba(56, 189, 248, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.atlas-closed-captions-dock.theme-dark .btn-caption-size.active,
+.atlas-closed-captions-dock[data-theme="dark"] .btn-caption-size.active,
+html.theme-dark .atlas-closed-captions-dock .btn-caption-size.active,
+body[data-theme="dark"] .atlas-closed-captions-dock .btn-caption-size.active,
+.theme-dark .atlas-closed-captions-dock .btn-caption-size.active,
+.academic-app-wrapper.theme-dark .atlas-closed-captions-dock .btn-caption-size.active {
+  background: #38bdf8 !important;
+  color: #0f172a !important;
+  border-color: #38bdf8 !important;
+  font-weight: 800 !important;
+}
+
+.atlas-closed-captions-dock.theme-dark .btn-caption-close,
+.atlas-closed-captions-dock[data-theme="dark"] .btn-caption-close,
+html.theme-dark .atlas-closed-captions-dock .btn-caption-close,
+body[data-theme="dark"] .atlas-closed-captions-dock .btn-caption-close,
+.theme-dark .atlas-closed-captions-dock .btn-caption-close,
+.academic-app-wrapper.theme-dark .atlas-closed-captions-dock .btn-caption-close {
+  color: #94a3b8 !important;
+}
+
+.atlas-closed-captions-dock.theme-dark .btn-caption-close:hover,
+.atlas-closed-captions-dock[data-theme="dark"] .btn-caption-close:hover,
+html.theme-dark .atlas-closed-captions-dock .btn-caption-close:hover,
+body[data-theme="dark"] .atlas-closed-captions-dock .btn-caption-close:hover,
+.theme-dark .atlas-closed-captions-dock .btn-caption-close:hover,
+.academic-app-wrapper.theme-dark .atlas-closed-captions-dock .btn-caption-close:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* 3. CYBERPUNK GLOW THEME */
+.atlas-closed-captions-dock.theme-cyberpunk,
+.atlas-closed-captions-dock[data-theme="cyberpunk"],
 html.theme-cyberpunk .atlas-closed-captions-dock,
 body[data-theme="cyberpunk"] .atlas-closed-captions-dock,
-.theme-cyberpunk .atlas-closed-captions-dock {
+.theme-cyberpunk .atlas-closed-captions-dock,
+.academic-app-wrapper.theme-cyberpunk .atlas-closed-captions-dock {
   background: rgba(8, 9, 16, 0.96) !important;
   border: 2px solid #06b6d4 !important;
   box-shadow: 0 0 30px rgba(6, 182, 212, 0.45), 0 0 15px rgba(236, 72, 153, 0.35) !important;
+  color: #f0f6fc !important;
 }
 
+.atlas-closed-captions-dock.theme-cyberpunk .caption-badge,
+.atlas-closed-captions-dock[data-theme="cyberpunk"] .caption-badge,
 html.theme-cyberpunk .atlas-closed-captions-dock .caption-badge,
 body[data-theme="cyberpunk"] .atlas-closed-captions-dock .caption-badge,
-.theme-cyberpunk .atlas-closed-captions-dock .caption-badge {
+.theme-cyberpunk .atlas-closed-captions-dock .caption-badge,
+.academic-app-wrapper.theme-cyberpunk .atlas-closed-captions-dock .caption-badge {
   background: linear-gradient(135deg, #ec4899, #06b6d4) !important;
   color: #ffffff !important;
   box-shadow: 0 0 12px rgba(6, 182, 212, 0.6) !important;
 }
 
+.atlas-closed-captions-dock.theme-cyberpunk .caption-speaker,
+.atlas-closed-captions-dock[data-theme="cyberpunk"] .caption-speaker,
 html.theme-cyberpunk .atlas-closed-captions-dock .caption-speaker,
 body[data-theme="cyberpunk"] .atlas-closed-captions-dock .caption-speaker,
-.theme-cyberpunk .atlas-closed-captions-dock .caption-speaker {
+.theme-cyberpunk .atlas-closed-captions-dock .caption-speaker,
+.academic-app-wrapper.theme-cyberpunk .atlas-closed-captions-dock .caption-speaker {
   color: #f43f5e !important;
   font-weight: 800 !important;
   text-shadow: 0 0 10px rgba(244, 63, 94, 0.7) !important;
 }
 
+.atlas-closed-captions-dock.theme-cyberpunk .caption-text,
+.atlas-closed-captions-dock[data-theme="cyberpunk"] .caption-text,
 html.theme-cyberpunk .atlas-closed-captions-dock .caption-text,
 body[data-theme="cyberpunk"] .atlas-closed-captions-dock .caption-text,
-.theme-cyberpunk .atlas-closed-captions-dock .caption-text {
+.theme-cyberpunk .atlas-closed-captions-dock .caption-text,
+.academic-app-wrapper.theme-cyberpunk .atlas-closed-captions-dock .caption-text {
   color: #f0f6fc !important;
   text-shadow: 0 0 6px rgba(240, 246, 252, 0.3) !important;
 }
 
+.atlas-closed-captions-dock.theme-cyberpunk .btn-caption-size,
+.atlas-closed-captions-dock[data-theme="cyberpunk"] .btn-caption-size,
 html.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size,
 body[data-theme="cyberpunk"] .atlas-closed-captions-dock .btn-caption-size,
-.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size {
+.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size,
+.academic-app-wrapper.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size {
   background: #0d0f1c !important;
   border: 1px solid #06b6d4 !important;
   color: #38bdf8 !important;
 }
 
+.atlas-closed-captions-dock.theme-cyberpunk .btn-caption-size:hover,
+.atlas-closed-captions-dock[data-theme="cyberpunk"] .btn-caption-size:hover,
+html.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size:hover,
+body[data-theme="cyberpunk"] .atlas-closed-captions-dock .btn-caption-size:hover,
+.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size:hover,
+.academic-app-wrapper.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size:hover {
+  background: rgba(6, 182, 212, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.atlas-closed-captions-dock.theme-cyberpunk .btn-caption-size.active,
+.atlas-closed-captions-dock[data-theme="cyberpunk"] .btn-caption-size.active,
 html.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size.active,
 body[data-theme="cyberpunk"] .atlas-closed-captions-dock .btn-caption-size.active,
-.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size.active {
+.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size.active,
+.academic-app-wrapper.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-size.active {
   background: linear-gradient(135deg, #06b6d4, #ec4899) !important;
   border-color: #ec4899 !important;
   color: #ffffff !important;
   box-shadow: 0 0 12px rgba(6, 182, 212, 0.6) !important;
 }
 
+.atlas-closed-captions-dock.theme-cyberpunk .btn-caption-close,
+.atlas-closed-captions-dock[data-theme="cyberpunk"] .btn-caption-close,
 html.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-close,
 body[data-theme="cyberpunk"] .atlas-closed-captions-dock .btn-caption-close,
-.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-close {
+.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-close,
+.academic-app-wrapper.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-close {
   color: #ec4899 !important;
 }
 
+.atlas-closed-captions-dock.theme-cyberpunk .btn-caption-close:hover,
+.atlas-closed-captions-dock[data-theme="cyberpunk"] .btn-caption-close:hover,
 html.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-close:hover,
 body[data-theme="cyberpunk"] .atlas-closed-captions-dock .btn-caption-close:hover,
-.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-close:hover {
+.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-close:hover,
+.academic-app-wrapper.theme-cyberpunk .atlas-closed-captions-dock .btn-caption-close:hover {
   background: rgba(236, 72, 153, 0.25) !important;
   color: #ffffff !important;
 }
 
-/* 3. EMERALD EYE-CARE THEME */
+/* 4. EMERALD EYE-CARE THEME */
+.atlas-closed-captions-dock.theme-emerald,
+.atlas-closed-captions-dock[data-theme="emerald"],
 html.theme-emerald .atlas-closed-captions-dock,
 body[data-theme="emerald"] .atlas-closed-captions-dock,
-.theme-emerald .atlas-closed-captions-dock {
+.theme-emerald .atlas-closed-captions-dock,
+.academic-app-wrapper.theme-emerald .atlas-closed-captions-dock {
   background: rgba(6, 35, 25, 0.96) !important;
   border: 2px solid #10b981 !important;
   box-shadow: 0 16px 45px rgba(0, 0, 0, 0.5), 0 0 22px rgba(16, 185, 129, 0.35) !important;
+  color: #ecfdf5 !important;
 }
 
+.atlas-closed-captions-dock.theme-emerald .caption-badge,
+.atlas-closed-captions-dock[data-theme="emerald"] .caption-badge,
 html.theme-emerald .atlas-closed-captions-dock .caption-badge,
 body[data-theme="emerald"] .atlas-closed-captions-dock .caption-badge,
-.theme-emerald .atlas-closed-captions-dock .caption-badge {
+.theme-emerald .atlas-closed-captions-dock .caption-badge,
+.academic-app-wrapper.theme-emerald .atlas-closed-captions-dock .caption-badge {
   background: linear-gradient(135deg, #059669, #10b981) !important;
   color: #ffffff !important;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.45) !important;
 }
 
+.atlas-closed-captions-dock.theme-emerald .caption-speaker,
+.atlas-closed-captions-dock[data-theme="emerald"] .caption-speaker,
 html.theme-emerald .atlas-closed-captions-dock .caption-speaker,
 body[data-theme="emerald"] .atlas-closed-captions-dock .caption-speaker,
-.theme-emerald .atlas-closed-captions-dock .caption-speaker {
+.theme-emerald .atlas-closed-captions-dock .caption-speaker,
+.academic-app-wrapper.theme-emerald .atlas-closed-captions-dock .caption-speaker {
   color: #34d399 !important;
   font-weight: 800 !important;
 }
 
+.atlas-closed-captions-dock.theme-emerald .caption-text,
+.atlas-closed-captions-dock[data-theme="emerald"] .caption-text,
 html.theme-emerald .atlas-closed-captions-dock .caption-text,
 body[data-theme="emerald"] .atlas-closed-captions-dock .caption-text,
-.theme-emerald .atlas-closed-captions-dock .caption-text {
+.theme-emerald .atlas-closed-captions-dock .caption-text,
+.academic-app-wrapper.theme-emerald .atlas-closed-captions-dock .caption-text {
   color: #ecfdf5 !important;
   font-weight: 600 !important;
 }
 
+.atlas-closed-captions-dock.theme-emerald .btn-caption-size,
+.atlas-closed-captions-dock[data-theme="emerald"] .btn-caption-size,
 html.theme-emerald .atlas-closed-captions-dock .btn-caption-size,
 body[data-theme="emerald"] .atlas-closed-captions-dock .btn-caption-size,
-.theme-emerald .atlas-closed-captions-dock .btn-caption-size {
+.theme-emerald .atlas-closed-captions-dock .btn-caption-size,
+.academic-app-wrapper.theme-emerald .atlas-closed-captions-dock .btn-caption-size {
   background: rgba(16, 185, 129, 0.12) !important;
   border: 1px solid rgba(16, 185, 129, 0.35) !important;
   color: #a7f3d0 !important;
 }
 
+.atlas-closed-captions-dock.theme-emerald .btn-caption-size:hover,
+.atlas-closed-captions-dock[data-theme="emerald"] .btn-caption-size:hover,
+html.theme-emerald .atlas-closed-captions-dock .btn-caption-size:hover,
+body[data-theme="emerald"] .atlas-closed-captions-dock .btn-caption-size:hover,
+.theme-emerald .atlas-closed-captions-dock .btn-caption-size:hover,
+.academic-app-wrapper.theme-emerald .atlas-closed-captions-dock .btn-caption-size:hover {
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.atlas-closed-captions-dock.theme-emerald .btn-caption-size.active,
+.atlas-closed-captions-dock[data-theme="emerald"] .btn-caption-size.active,
 html.theme-emerald .atlas-closed-captions-dock .btn-caption-size.active,
 body[data-theme="emerald"] .atlas-closed-captions-dock .btn-caption-size.active,
-.theme-emerald .atlas-closed-captions-dock .btn-caption-size.active {
+.theme-emerald .atlas-closed-captions-dock .btn-caption-size.active,
+.academic-app-wrapper.theme-emerald .atlas-closed-captions-dock .btn-caption-size.active {
   background: #10b981 !important;
   border-color: #10b981 !important;
   color: #062319 !important;
   font-weight: 800 !important;
 }
 
+.atlas-closed-captions-dock.theme-emerald .btn-caption-close,
+.atlas-closed-captions-dock[data-theme="emerald"] .btn-caption-close,
 html.theme-emerald .atlas-closed-captions-dock .btn-caption-close,
 body[data-theme="emerald"] .atlas-closed-captions-dock .btn-caption-close,
-.theme-emerald .atlas-closed-captions-dock .btn-caption-close {
+.theme-emerald .atlas-closed-captions-dock .btn-caption-close,
+.academic-app-wrapper.theme-emerald .atlas-closed-captions-dock .btn-caption-close {
   color: #6ee7b7 !important;
 }
 
+.atlas-closed-captions-dock.theme-emerald .btn-caption-close:hover,
+.atlas-closed-captions-dock[data-theme="emerald"] .btn-caption-close:hover,
 html.theme-emerald .atlas-closed-captions-dock .btn-caption-close:hover,
 body[data-theme="emerald"] .atlas-closed-captions-dock .btn-caption-close:hover,
-.theme-emerald .atlas-closed-captions-dock .btn-caption-close:hover {
+.theme-emerald .atlas-closed-captions-dock .btn-caption-close:hover,
+.academic-app-wrapper.theme-emerald .atlas-closed-captions-dock .btn-caption-close:hover {
   background: rgba(16, 185, 129, 0.25) !important;
   color: #ffffff !important;
 }
 
-/* 4. WARM AMBER THEME */
+/* 5. WARM AMBER THEME */
+.atlas-closed-captions-dock.theme-amber,
+.atlas-closed-captions-dock[data-theme="amber"],
 html.theme-amber .atlas-closed-captions-dock,
 body[data-theme="amber"] .atlas-closed-captions-dock,
-.theme-amber .atlas-closed-captions-dock {
+.theme-amber .atlas-closed-captions-dock,
+.academic-app-wrapper.theme-amber .atlas-closed-captions-dock {
   background: rgba(26, 20, 14, 0.96) !important;
   border: 2px solid #f59e0b !important;
   box-shadow: 0 16px 45px rgba(0, 0, 0, 0.5), 0 0 22px rgba(245, 158, 11, 0.35) !important;
+  color: #fffbeb !important;
 }
 
+.atlas-closed-captions-dock.theme-amber .caption-badge,
+.atlas-closed-captions-dock[data-theme="amber"] .caption-badge,
 html.theme-amber .atlas-closed-captions-dock .caption-badge,
 body[data-theme="amber"] .atlas-closed-captions-dock .caption-badge,
-.theme-amber .atlas-closed-captions-dock .caption-badge {
+.theme-amber .atlas-closed-captions-dock .caption-badge,
+.academic-app-wrapper.theme-amber .atlas-closed-captions-dock .caption-badge {
   background: linear-gradient(135deg, #d97706, #f59e0b) !important;
   color: #ffffff !important;
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.45) !important;
 }
 
+.atlas-closed-captions-dock.theme-amber .caption-speaker,
+.atlas-closed-captions-dock[data-theme="amber"] .caption-speaker,
 html.theme-amber .atlas-closed-captions-dock .caption-speaker,
 body[data-theme="amber"] .atlas-closed-captions-dock .caption-speaker,
-.theme-amber .atlas-closed-captions-dock .caption-speaker {
+.theme-amber .atlas-closed-captions-dock .caption-speaker,
+.academic-app-wrapper.theme-amber .atlas-closed-captions-dock .caption-speaker {
   color: #fbbf24 !important;
   font-weight: 800 !important;
 }
 
+.atlas-closed-captions-dock.theme-amber .caption-text,
+.atlas-closed-captions-dock[data-theme="amber"] .caption-text,
 html.theme-amber .atlas-closed-captions-dock .caption-text,
 body[data-theme="amber"] .atlas-closed-captions-dock .caption-text,
-.theme-amber .atlas-closed-captions-dock .caption-text {
+.theme-amber .atlas-closed-captions-dock .caption-text,
+.academic-app-wrapper.theme-amber .atlas-closed-captions-dock .caption-text {
   color: #fffbeb !important;
   font-weight: 600 !important;
 }
 
+.atlas-closed-captions-dock.theme-amber .btn-caption-size,
+.atlas-closed-captions-dock[data-theme="amber"] .btn-caption-size,
 html.theme-amber .atlas-closed-captions-dock .btn-caption-size,
 body[data-theme="amber"] .atlas-closed-captions-dock .btn-caption-size,
-.theme-amber .atlas-closed-captions-dock .btn-caption-size {
+.theme-amber .atlas-closed-captions-dock .btn-caption-size,
+.academic-app-wrapper.theme-amber .atlas-closed-captions-dock .btn-caption-size {
   background: rgba(245, 158, 11, 0.12) !important;
   border: 1px solid rgba(245, 158, 11, 0.35) !important;
   color: #fde68a !important;
 }
 
+.atlas-closed-captions-dock.theme-amber .btn-caption-size:hover,
+.atlas-closed-captions-dock[data-theme="amber"] .btn-caption-size:hover,
+html.theme-amber .atlas-closed-captions-dock .btn-caption-size:hover,
+body[data-theme="amber"] .atlas-closed-captions-dock .btn-caption-size:hover,
+.theme-amber .atlas-closed-captions-dock .btn-caption-size:hover,
+.academic-app-wrapper.theme-amber .atlas-closed-captions-dock .btn-caption-size:hover {
+  background: rgba(245, 158, 11, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.atlas-closed-captions-dock.theme-amber .btn-caption-size.active,
+.atlas-closed-captions-dock[data-theme="amber"] .btn-caption-size.active,
 html.theme-amber .atlas-closed-captions-dock .btn-caption-size.active,
 body[data-theme="amber"] .atlas-closed-captions-dock .btn-caption-size.active,
-.theme-amber .atlas-closed-captions-dock .btn-caption-size.active {
+.theme-amber .atlas-closed-captions-dock .btn-caption-size.active,
+.academic-app-wrapper.theme-amber .atlas-closed-captions-dock .btn-caption-size.active {
   background: #f59e0b !important;
   border-color: #f59e0b !important;
   color: #1a140e !important;
   font-weight: 800 !important;
 }
 
+.atlas-closed-captions-dock.theme-amber .btn-caption-close,
+.atlas-closed-captions-dock[data-theme="amber"] .btn-caption-close,
 html.theme-amber .atlas-closed-captions-dock .btn-caption-close,
 body[data-theme="amber"] .atlas-closed-captions-dock .btn-caption-close,
-.theme-amber .atlas-closed-captions-dock .btn-caption-close {
+.theme-amber .atlas-closed-captions-dock .btn-caption-close,
+.academic-app-wrapper.theme-amber .atlas-closed-captions-dock .btn-caption-close {
   color: #fcd34d !important;
 }
 
+.atlas-closed-captions-dock.theme-amber .btn-caption-close:hover,
+.atlas-closed-captions-dock[data-theme="amber"] .btn-caption-close:hover,
 html.theme-amber .atlas-closed-captions-dock .btn-caption-close:hover,
 body[data-theme="amber"] .atlas-closed-captions-dock .btn-caption-close:hover,
-.theme-amber .atlas-closed-captions-dock .btn-caption-close:hover {
+.theme-amber .atlas-closed-captions-dock .btn-caption-close:hover,
+.academic-app-wrapper.theme-amber .atlas-closed-captions-dock .btn-caption-close:hover {
   background: rgba(245, 158, 11, 0.25) !important;
   color: #ffffff !important;
 }
 
-/* 5. HIGH CONTRAST AAA MODE */
+/* 6. HIGH CONTRAST AAA MODE */
+.atlas-closed-captions-dock.theme-high-contrast,
+.atlas-closed-captions-dock[data-theme="high-contrast"],
 html.theme-high-contrast .atlas-closed-captions-dock,
 body.theme-high-contrast .atlas-closed-captions-dock,
-.theme-high-contrast .atlas-closed-captions-dock {
+.theme-high-contrast .atlas-closed-captions-dock,
+.academic-app-wrapper.theme-high-contrast .atlas-closed-captions-dock {
   background: #000000 !important;
   border: 3px solid #ffff00 !important;
   box-shadow: 0 0 0 4px #000000, 0 0 30px #ffff00 !important;
+  color: #ffffff !important;
 }
 
+.atlas-closed-captions-dock.theme-high-contrast .caption-badge,
+.atlas-closed-captions-dock[data-theme="high-contrast"] .caption-badge,
 html.theme-high-contrast .atlas-closed-captions-dock .caption-badge,
 body.theme-high-contrast .atlas-closed-captions-dock .caption-badge,
-.theme-high-contrast .atlas-closed-captions-dock .caption-badge {
+.theme-high-contrast .atlas-closed-captions-dock .caption-badge,
+.academic-app-wrapper.theme-high-contrast .atlas-closed-captions-dock .caption-badge {
   background: #ffff00 !important;
   color: #000000 !important;
   font-weight: 900 !important;
   border: 1px solid #ffffff !important;
 }
 
+.atlas-closed-captions-dock.theme-high-contrast .caption-speaker,
+.atlas-closed-captions-dock[data-theme="high-contrast"] .caption-speaker,
 html.theme-high-contrast .atlas-closed-captions-dock .caption-speaker,
 body.theme-high-contrast .atlas-closed-captions-dock .caption-speaker,
-.theme-high-contrast .atlas-closed-captions-dock .caption-speaker {
+.theme-high-contrast .atlas-closed-captions-dock .caption-speaker,
+.academic-app-wrapper.theme-high-contrast .atlas-closed-captions-dock .caption-speaker {
   color: #ffff00 !important;
   font-weight: 900 !important;
 }
 
+.atlas-closed-captions-dock.theme-high-contrast .caption-text,
+.atlas-closed-captions-dock[data-theme="high-contrast"] .caption-text,
 html.theme-high-contrast .atlas-closed-captions-dock .caption-text,
 body.theme-high-contrast .atlas-closed-captions-dock .caption-text,
-.theme-high-contrast .atlas-closed-captions-dock .caption-text {
+.theme-high-contrast .atlas-closed-captions-dock .caption-text,
+.academic-app-wrapper.theme-high-contrast .atlas-closed-captions-dock .caption-text {
   color: #ffffff !important;
   font-weight: 800 !important;
 }
 
+.atlas-closed-captions-dock.theme-high-contrast .btn-caption-size,
+.atlas-closed-captions-dock[data-theme="high-contrast"] .btn-caption-size,
 html.theme-high-contrast .atlas-closed-captions-dock .btn-caption-size,
 body.theme-high-contrast .atlas-closed-captions-dock .btn-caption-size,
-.theme-high-contrast .atlas-closed-captions-dock .btn-caption-size {
+.theme-high-contrast .atlas-closed-captions-dock .btn-caption-size,
+.academic-app-wrapper.theme-high-contrast .atlas-closed-captions-dock .btn-caption-size {
   background: #000000 !important;
   border: 2px solid #ffff00 !important;
   color: #ffff00 !important;
 }
 
+.atlas-closed-captions-dock.theme-high-contrast .btn-caption-size.active,
+.atlas-closed-captions-dock[data-theme="high-contrast"] .btn-caption-size.active,
 html.theme-high-contrast .atlas-closed-captions-dock .btn-caption-size.active,
 body.theme-high-contrast .atlas-closed-captions-dock .btn-caption-size.active,
-.theme-high-contrast .atlas-closed-captions-dock .btn-caption-size.active {
+.theme-high-contrast .atlas-closed-captions-dock .btn-caption-size.active,
+.academic-app-wrapper.theme-high-contrast .atlas-closed-captions-dock .btn-caption-size.active {
   background: #ffff00 !important;
   border-color: #ffff00 !important;
   color: #000000 !important;
   font-weight: 900 !important;
 }
 
+.atlas-closed-captions-dock.theme-high-contrast .btn-caption-close,
+.atlas-closed-captions-dock[data-theme="high-contrast"] .btn-caption-close,
 html.theme-high-contrast .atlas-closed-captions-dock .btn-caption-close,
 body.theme-high-contrast .atlas-closed-captions-dock .btn-caption-close,
-.theme-high-contrast .atlas-closed-captions-dock .btn-caption-close {
+.theme-high-contrast .atlas-closed-captions-dock .btn-caption-close,
+.academic-app-wrapper.theme-high-contrast .atlas-closed-captions-dock .btn-caption-close {
   color: #ffff00 !important;
   border: 1px solid #ffff00 !important;
 }

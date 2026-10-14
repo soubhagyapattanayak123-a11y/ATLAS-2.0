@@ -1130,7 +1130,7 @@ Passage: (The 2-3 spoken sentences)`;
     const saved = localStorage.getItem('atlas_theme') as ThemeMode;
     return saved && ['dark', 'light', 'cyberpunk', 'emerald', 'amber'].includes(saved)
       ? saved
-      : 'dark';
+      : 'light';
   });
 
   // Sync active theme to document.documentElement attributes and classes
@@ -5831,14 +5831,44 @@ Passage: (The 2-3 spoken sentences)`;
       {/* 4. Live Closed Captions (Subtitles) Dock (for Deaf & Hard of Hearing) */}
       {closedCaptionsEnabled && (
         <div
-          className={`atlas-closed-captions-dock caption-size-${captionSize} ${currentCaption.active ? 'active' : ''}`}
+          className={`atlas-closed-captions-dock theme-${currentTheme} caption-size-${captionSize} ${currentCaption.active ? 'active' : ''}`}
+          data-theme={currentTheme}
+          style={{
+            background: currentTheme === 'light' ? '#ffffff' : undefined,
+            borderColor: currentTheme === 'light' ? '#2563eb' : undefined,
+            color: currentTheme === 'light' ? '#0f172a' : undefined,
+            boxShadow:
+              currentTheme === 'light'
+                ? '0 16px 45px rgba(37, 99, 235, 0.18), 0 4px 14px rgba(15, 23, 42, 0.08)'
+                : undefined,
+          }}
           role="region"
           aria-label="Closed Captions Subtitles"
         >
           <div className="caption-content">
-            <span className="caption-badge">CC</span>
-            <span className="caption-speaker">{currentCaption.speaker || 'Atlas Voice'}:</span>
-            <span className="caption-text">
+            <span
+              className="caption-badge"
+              style={{
+                backgroundColor: currentTheme === 'light' ? '#2563eb' : undefined,
+                color: currentTheme === 'light' ? '#ffffff' : undefined,
+              }}
+            >
+              CC
+            </span>
+            <span
+              className="caption-speaker"
+              style={{
+                color: currentTheme === 'light' ? '#1d4ed8' : undefined,
+              }}
+            >
+              {currentCaption.speaker || 'Atlas Voice'}:
+            </span>
+            <span
+              className="caption-text"
+              style={{
+                color: currentTheme === 'light' ? '#0f172a' : undefined,
+              }}
+            >
               {currentCaption.text ||
                 (selectedLanguage === 'Odia'
                   ? 'ସ୍ପଷ୍ଟ ଧ୍ୱନି ବା ବାର୍ତ୍ତାଳାପକୁ ଅପେକ୍ଷା କରାଯାଉଛି...'
@@ -5853,6 +5883,26 @@ Passage: (The 2-3 spoken sentences)`;
               className={`btn-caption-size ${captionSize === 'normal' ? 'active' : ''}`}
               onClick={() => setCaptionSize('normal')}
               title="Normal Font Scale"
+              style={{
+                backgroundColor:
+                  currentTheme === 'light'
+                    ? captionSize === 'normal'
+                      ? '#2563eb'
+                      : '#f1f5f9'
+                    : undefined,
+                borderColor:
+                  currentTheme === 'light'
+                    ? captionSize === 'normal'
+                      ? '#2563eb'
+                      : '#cbd5e1'
+                    : undefined,
+                color:
+                  currentTheme === 'light'
+                    ? captionSize === 'normal'
+                      ? '#ffffff'
+                      : '#1e293b'
+                    : undefined,
+              }}
             >
               A
             </button>
@@ -5861,6 +5911,26 @@ Passage: (The 2-3 spoken sentences)`;
               className={`btn-caption-size ${captionSize === 'large' ? 'active' : ''}`}
               onClick={() => setCaptionSize('large')}
               title="Large Font Scale"
+              style={{
+                backgroundColor:
+                  currentTheme === 'light'
+                    ? captionSize === 'large'
+                      ? '#2563eb'
+                      : '#f1f5f9'
+                    : undefined,
+                borderColor:
+                  currentTheme === 'light'
+                    ? captionSize === 'large'
+                      ? '#2563eb'
+                      : '#cbd5e1'
+                    : undefined,
+                color:
+                  currentTheme === 'light'
+                    ? captionSize === 'large'
+                      ? '#ffffff'
+                      : '#1e293b'
+                    : undefined,
+              }}
             >
               A+
             </button>
@@ -5869,6 +5939,26 @@ Passage: (The 2-3 spoken sentences)`;
               className={`btn-caption-size ${captionSize === 'xlarge' ? 'active' : ''}`}
               onClick={() => setCaptionSize('xlarge')}
               title="Extra Large Font Scale"
+              style={{
+                backgroundColor:
+                  currentTheme === 'light'
+                    ? captionSize === 'xlarge'
+                      ? '#2563eb'
+                      : '#f1f5f9'
+                    : undefined,
+                borderColor:
+                  currentTheme === 'light'
+                    ? captionSize === 'xlarge'
+                      ? '#2563eb'
+                      : '#cbd5e1'
+                    : undefined,
+                color:
+                  currentTheme === 'light'
+                    ? captionSize === 'xlarge'
+                      ? '#ffffff'
+                      : '#1e293b'
+                    : undefined,
+              }}
             >
               A++
             </button>
@@ -5877,6 +5967,9 @@ Passage: (The 2-3 spoken sentences)`;
               className="btn-caption-close"
               onClick={() => setCurrentCaption((prev) => ({ ...prev, active: false }))}
               title="Clear current subtitle"
+              style={{
+                color: currentTheme === 'light' ? '#64748b' : undefined,
+              }}
             >
               <X size={13} />
             </button>
