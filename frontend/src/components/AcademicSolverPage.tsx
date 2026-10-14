@@ -36,7 +36,6 @@ import {
   WifiOff,
   Captions,
   Ear,
-  Eye,
   Brain,
   Sliders,
 } from 'lucide-react';
@@ -52,7 +51,6 @@ import { IndicVirtualKeyboard, type IndicLanguage } from './IndicVirtualKeyboard
 import { VoiceAccessModal } from './VoiceAccessModal';
 import {
   playVoiceAccessChime,
-  playEarcon,
   addSoundAlertListener,
   type SoundAlertInfo,
 } from '../utils/soundEffects';
@@ -292,25 +290,19 @@ export function AcademicSolverPage({
       themeActiveBadge: 'ACTIVE',
       a11yCenterTitle: 'Universal Accessibility Center (Disability Suites)',
       a11yCenterSubtitle: 'Tailored sensory, motor, auditory, and neurodiverse accessibility features',
-      suiteVisualTitle: '1. Visually Impaired & Blind Access',
-      suiteVisualDesc: 'Audio Earcon sound cues, live ARIA announcements, and spoken step descriptions',
-      earconsToggleTitle: 'Audio Earcons (Procedural Sound Cues)',
-      earconsToggleDesc: 'Auditory confirmation pings for focus, selection, navigation, and error states without sight',
-      audioDescToggleTitle: 'Spoken Math & Formula Descriptions',
-      audioDescToggleDesc: 'Speaks mathematical structures, equation transformations, and visual chart summaries',
-      suiteMotorTitle: '2. Motor & Mobility Impairment Access',
+      suiteMotorTitle: '1. Motor & Mobility Impairment Access',
       suiteMotorDesc: 'Single-switch auto-scanning navigation, hands-free voice control, and shortcuts',
       switchAccessToggleTitle: 'Auto-Scanning Switch Access',
       switchAccessToggleDesc: 'Navigate the entire interface using single switch, Space, Enter, or foot pedal',
       switchSpeedTitle: 'Switch Scanning Cycle Speed',
-      suiteHearingTitle: '3. Hearing Impaired & Deaf Access',
+      suiteHearingTitle: '2. Hearing Impaired & Deaf Access',
       suiteHearingDesc: 'Live Closed Captions subtitle dock and visual flashing sound alerts',
       captionsToggleTitle: 'Live Closed Captions (Subtitles Dock)',
       captionsToggleDesc: 'Displays floating subtitle bar with real-time text transcription and speaker badges',
       captionsSizeTitle: 'Subtitle Dock Font Scale',
       visualAlertsToggleTitle: 'Visual Sound Alerts & Border Glow',
       visualAlertsToggleDesc: 'Flashes visual cues and icons when chimes, bells, or voice narrations play',
-      suiteCognitiveTitle: '4. Cognitive & Neurodiversity Suite (ADHD & Dyscalculia)',
+      suiteCognitiveTitle: '3. Cognitive & Neurodiversity Suite (ADHD & Dyscalculia)',
       suiteCognitiveDesc: 'Reading Focus Ruler, plain-language text simplifier, and math color coding',
       readingRulerToggleTitle: 'Reading Focus Ruler Overlay',
       readingRulerToggleDesc: 'Dims distracting areas and isolates current line to reduce cognitive overload',
@@ -456,25 +448,19 @@ export function AcademicSolverPage({
       themeActiveBadge: 'सक्रिय',
       a11yCenterTitle: 'सार्वभौमिक पहुंच केंद्र (दिव्यांगता सुलभता)',
       a11yCenterSubtitle: 'दृष्टि, गतिशीलता, श्रवण और न्यूरोडाइवर्स आवश्यकताओं के लिए विशेष सुविधाएं',
-      suiteVisualTitle: '1. दृष्टिबाधित और अंधता पहुंच (Visual Impairment)',
-      suiteVisualDesc: 'ऑडियो ईयरकॉन संकेत, लाइव एआरआईए घोषणाएं और गणितीय सूत्र वाचन',
-      earconsToggleTitle: 'ऑडियो ईयरकॉन (ध्वनि संकेत)',
-      earconsToggleDesc: 'बिना स्क्रीन देखे फोकस, चयन, नेविगेशन और त्रुटि की पुष्टि के लिए ध्वनि बीप',
-      audioDescToggleTitle: 'बोले जाने वाले गणित और आरेख विवरण',
-      audioDescToggleDesc: 'गणितीय चरणों, समीकरणों और आरेख सारांशों का स्वतः ध्वनि वाचन',
-      suiteMotorTitle: '2. गतिशीलता और मोटर विकलांगता (Motor & Mobility)',
+      suiteMotorTitle: '1. गतिशीलता और मोटर विकलांगता (Motor & Mobility)',
       suiteMotorDesc: 'सिंगल-स्विच ऑटो-स्कैनिंग, हैंड्स-फ्री वॉयस कंट्रोल और शॉर्टकट',
       switchAccessToggleTitle: 'ऑटो-स्कैनिंग स्विच एक्सेस',
       switchAccessToggleDesc: 'सिंगल स्विच, स्पेस, एंटर या फुट पैडल से पूरे ऐप में घूमें और चुनें',
       switchSpeedTitle: 'स्विच स्कैन चक्र गति',
-      suiteHearingTitle: '3. श्रवण बाधित और बधिर पहुंच (Hearing Impairment)',
+      suiteHearingTitle: '2. श्रवण बाधित और बधिर पहुंच (Hearing Impairment)',
       suiteHearingDesc: 'लाइव क्लोज्ड कैप्शन (सबटाइटल डॉक) और विज़ुअल साउंड अलर्ट',
       captionsToggleTitle: 'लाइव क्लोज्ड कैप्शन (सबटाइटल डॉक)',
       captionsToggleDesc: 'स्पीकर बैज के साथ स्क्रीन पर वास्तविक समय में उपशीर्षक पट्टी प्रदर्शित करें',
       captionsSizeTitle: 'सबटाइटल फ़ॉन्ट आकार',
       visualAlertsToggleTitle: 'विज़ुअल साउंड अलर्ट और बॉर्डर चमक',
       visualAlertsToggleDesc: 'ध्वनि या भाषण बजने पर स्क्रीन पर दृश्य संकेत और चमक दिखाएं',
-      suiteCognitiveTitle: '4. संज्ञानात्मक और न्यूरोडाइवर्सिटी (ADHD और डिस्केल्कूलिया)',
+      suiteCognitiveTitle: '3. संज्ञानात्मक और न्यूरोडाइवर्सिटी (ADHD और डिस्केल्कूलिया)',
       suiteCognitiveDesc: 'रीडिंग फोकस रूलर, सरल भाषा सारांश और गणित रंग कोडिंग',
       readingRulerToggleTitle: 'रीडिंग फोकस रूलर ओवरले',
       readingRulerToggleDesc: 'विचलित करने वाले क्षेत्रों को धुंधला करके सक्रिय पंक्ति पर ध्यान केंद्रित करें',
@@ -620,25 +606,19 @@ export function AcademicSolverPage({
       themeActiveBadge: 'ସକ୍ରିୟ',
       a11yCenterTitle: 'ସାର୍ବଜନୀନ ସୁଗମତା କେନ୍ଦ୍ର (ଦିବ୍ୟାଙ୍ଗ ସୁବିଧା ସମୂହ)',
       a11yCenterSubtitle: 'ଦୃଷ୍ଟି, ଶ୍ରବଣ, ଚଳନଶକ୍ତି ଏବଂ ମାନସିକ ସ୍ୱଚ୍ଛତା ପାଇଁ ସ୍ୱତନ୍ତ୍ର ସୁଗମତା ବ୍ୟବସ୍ଥା',
-      suiteVisualTitle: '୧. ଦୃଷ୍ଟିହୀନ ଓ ଦୃଷ୍ଟିଦୋଷ ସହାୟତା (Visual Impairment)',
-      suiteVisualDesc: 'ଅଡିଓ ଇୟରକନ୍ ଧ୍ୱନି ସଙ୍କେତ, ARIA ଘୋଷଣା ଏବଂ ଗଣିତ ପଦକ୍ଷେପ ବର୍ଣ୍ଣନା',
-      earconsToggleTitle: 'ଅଡିଓ ଇୟରକନ୍ (ପ୍ରୋସିଜୁରାଲ୍ ଧ୍ୱନି ସଙ୍କେତ)',
-      earconsToggleDesc: 'ସ୍କ୍ରିନ୍ ନଦେଖି ଫୋକସ୍, ଚୟନ, ନେଭିଗେସନ୍ ଓ ଭୁଲ୍ ଜାଣିବା ପାଇଁ ଶ୍ରାବ୍ୟ ଧ୍ୱନି',
-      audioDescToggleTitle: 'ଗଣିତ ସୂତ୍ର ଓ ଚିତ୍ରର ମୌଖିକ ବର୍ଣ୍ଣନା',
-      audioDescToggleDesc: 'ଗାଣିତିକ ପଦକ୍ଷେପ, ସମୀକରଣ ରୂପାନ୍ତରଣ ଏବଂ ଚାର୍ଟ ସାରାଂଶକୁ ପଢ଼ି ଶୁଣାଏ',
-      suiteMotorTitle: '୨. ଗତିଶୀଳତା ଓ ଚଳନଶକ୍ତି ଅକ୍ଷମତା ସହାୟତା (Motor & Mobility)',
+      suiteMotorTitle: '୧. ଗତିଶୀଳତା ଓ ଚଳନଶକ୍ତି ଅକ୍ଷମତା ସହାୟତା (Motor & Mobility)',
       suiteMotorDesc: 'ସିଙ୍ଗଲ୍-ସ୍ୱିଚ୍ ଅଟୋ-ସ୍କାନିଂ, ହାତମୁକ୍ତ ଭଏସ୍ କମାଣ୍ଡ ଏବଂ କୀବୋର୍ଡ ଶର୍ଟକଟ୍',
       switchAccessToggleTitle: 'ଅଟୋ-ସ୍କାନିଂ ସ୍ୱିଚ୍ ଆକ୍ସେସ୍ (Switch Access)',
       switchAccessToggleDesc: 'ଗୋଟିଏ ସ୍ୱିଚ୍, ସ୍ପେସ୍, ଏଣ୍ଟର କିମ୍ବା ଫୁଟ୍ ପେଡାଲ୍ ସାହାଯ୍ୟରେ ସମ୍ପୂର୍ଣ୍ଣ ଆପ୍ ପରିଚାଳନା କରନ୍ତୁ',
       switchSpeedTitle: 'ସ୍ୱିଚ୍ ସ୍କାନ୍ ଗତି ଚକ୍ର',
-      suiteHearingTitle: '୩. ଶ୍ରବଣହୀନ ଓ କାଲ ସହାୟତା (Hearing & Deaf Access)',
+      suiteHearingTitle: '୨. ଶ୍ରବଣହୀନ ଓ କାଲ ସହାୟତା (Hearing & Deaf Access)',
       suiteHearingDesc: 'ଲାଇଭ୍ କ୍ଲୋଜ୍ଡ କ୍ୟାପ୍ସନ୍ (ସବଟାଇଟଲ୍ ଡକ୍) ଏବଂ ଭିଜୁଆଲ୍ ସାଉଣ୍ଡ ଆଲର୍ଟ',
       captionsToggleTitle: 'ଲାଇଭ୍ କ୍ଲୋଜ୍ଡ କ୍ୟାପ୍ସନ୍ (ସବଟାଇଟଲ୍ ଡକ୍)',
       captionsToggleDesc: 'ବକ୍ତା ପରିଚୟ ସହିତ ସ୍କ୍ରିନ୍ ତଳେ ରିଅଲ-ଟାଇମ୍ ସବଟାଇଟଲ୍ ବାର୍ ପ୍ରଦର୍ଶନ କରନ୍ତୁ',
       captionsSizeTitle: 'ସବଟାଇଟଲ୍ ଫଣ୍ଟ ଆକାର',
       visualAlertsToggleTitle: 'ଭିଜୁଆଲ୍ ସାଉଣ୍ଡ ଆଲର୍ଟ ଓ ବର୍ଡର ଫ୍ଲାସ୍',
       visualAlertsToggleDesc: 'କୌଣସି ଶବ୍ଦ ବା ଭଏସ୍ ବାଜିଲେ ସ୍କ୍ରିନ୍ରେ ଆଲୋକ ଓ ସୂଚକ ଚିହ୍ନ ଝଲସିବ',
-      suiteCognitiveTitle: '୪. ଜ୍ଞାନଗତ ଓ ନ୍ୟୁରୋଡାଇଭର୍ସିଟି ସୁଇଟ୍ (ADHD ଓ ଡିସକାଲକୁଲିଆ)',
+      suiteCognitiveTitle: '୩. ବୌଦ୍ଧିକ ଓ ସ୍ମୃତି ସହାୟତା (Cognitive Suite)',
       suiteCognitiveDesc: 'ରିଡିଂ ଫୋକସ୍ ରୁଲର୍, ସରଳ ଭାଷା ସାରାଂଶ ଏବଂ ଗଣିତ ରଙ୍ଗ-କୋଡିଂ',
       readingRulerToggleTitle: 'ରିଡିଂ ଫୋକସ୍ ରୁଲର୍ ଓଭରଲେ (Reading Ruler)',
       readingRulerToggleDesc: 'ଅନ୍ୟାନ୍ୟ ଅଂଶକୁ ଅନ୍ଧାର କରି କେବଳ ପଢ଼ୁଥିବା ଧାଡ଼ି ଉପରେ ଧ୍ୟାନ କେନ୍ଦ୍ରିତ କରନ୍ତୁ',
@@ -1199,28 +1179,13 @@ Passage: (The 2-3 spoken sentences)`;
   // 4 UNIVERSAL ACCESSIBILITY DISABILITY SUITES (State & Persistence)
   // =========================================================================
 
-  // 1. Visually Impaired & Blind Access State
+  // Screen reader live announcement helper
   const [ariaAnnounce, setAriaAnnounce] = useState<string>('');
-  const [earconsEnabled, setEarconsEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('atlas_audio_earcons') !== 'false';
-  });
-  const [audioDescriptionsEnabled, setAudioDescriptionsEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('atlas_audio_descriptions') !== 'false';
-  });
-
   const announceToScreenReader = (msg: string) => {
     setAriaAnnounce(msg);
   };
 
-  useEffect(() => {
-    localStorage.setItem('atlas_audio_earcons', String(earconsEnabled));
-  }, [earconsEnabled]);
-
-  useEffect(() => {
-    localStorage.setItem('atlas_audio_descriptions', String(audioDescriptionsEnabled));
-  }, [audioDescriptionsEnabled]);
-
-  // 2. Motor & Mobility Switch Access State
+  // 1. Motor & Mobility Switch Access State
   const [switchAccessEnabled, setSwitchAccessEnabled] = useState<boolean>(() => {
     return localStorage.getItem('atlas_switch_access') === 'true';
   });
@@ -1378,7 +1343,6 @@ Passage: (The 2-3 spoken sentences)`;
         if (nextEl) {
           nextEl.classList.add('switch-scanned-target');
           nextEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          if (earconsEnabled) playEarcon('focus');
         }
         return nextIdx;
       });
@@ -1390,13 +1354,12 @@ Passage: (The 2-3 spoken sentences)`;
         el.classList.remove('switch-scanned-target');
       });
     };
-  }, [switchAccessEnabled, switchPaused, switchSpeed, earconsEnabled]);
+  }, [switchAccessEnabled, switchPaused, switchSpeed]);
 
   // Trigger click on currently scanned switch element
   const handleSwitchTrigger = () => {
     const activeEl = document.querySelector<HTMLElement>('.switch-scanned-target');
     if (activeEl) {
-      if (earconsEnabled) playEarcon('select');
       announceToScreenReader('Activated ' + (activeEl.innerText || 'Selected item'));
       activeEl.click();
     }
@@ -1409,7 +1372,6 @@ Passage: (The 2-3 spoken sentences)`;
       if (e.altKey && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
         setIsA11yModalOpen((prev) => !prev);
-        if (earconsEnabled) playEarcon('nav');
         return;
       }
       // Alt + C: Toggle Closed Captions
@@ -1420,7 +1382,6 @@ Passage: (The 2-3 spoken sentences)`;
           announceToScreenReader(next ? 'Closed Captions Enabled' : 'Closed Captions Disabled');
           return next;
         });
-        if (earconsEnabled) playEarcon('select');
         return;
       }
       // Alt + S: Toggle Switch Access
@@ -1431,7 +1392,6 @@ Passage: (The 2-3 spoken sentences)`;
           announceToScreenReader(next ? 'Switch Access Enabled' : 'Switch Access Disabled');
           return next;
         });
-        if (earconsEnabled) playEarcon('select');
         return;
       }
       // Alt + R: Toggle Reading Ruler
@@ -1442,7 +1402,6 @@ Passage: (The 2-3 spoken sentences)`;
           announceToScreenReader(next ? 'Reading Focus Ruler Enabled' : 'Reading Focus Ruler Disabled');
           return next;
         });
-        if (earconsEnabled) playEarcon('select');
         return;
       }
       // Space for Switch Access Trigger (when not typing in form inputs)
@@ -1457,13 +1416,12 @@ Passage: (The 2-3 spoken sentences)`;
       // Escape closes a11y modal
       if (e.key === 'Escape' && isA11yModalOpen) {
         setIsA11yModalOpen(false);
-        if (earconsEnabled) playEarcon('focus');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [switchAccessEnabled, isA11yModalOpen, earconsEnabled]);
+  }, [switchAccessEnabled, isA11yModalOpen]);
 
   // Learning History State
   const [activities, setActivities] = useState<LearningActivity[]>([]);
@@ -5441,73 +5399,14 @@ Passage: (The 2-3 spoken sentences)`;
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Sliders size={22} style={{ color: '#06b6d4' }} />
                     <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700 }}>{t.a11yCenterTitle}</h3>
-                    <span className="badge-new-feature">Universal 1-4</span>
+                    <span className="badge-new-feature">Universal 1-3</span>
                   </div>
                   <p style={{ margin: '0.35rem 0 0 0', color: 'var(--text-secondary, #94a3b8)', fontSize: '0.92rem' }}>
                     {t.a11yCenterSubtitle}
                   </p>
                 </div>
 
-                {/* SUITE 1: Visually Impaired & Blind Access */}
-                <div className="disability-suite-card">
-                  <div className="suite-card-header">
-                    <div className="suite-card-icon-wrap" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
-                      <Eye size={22} />
-                    </div>
-                    <div>
-                      <h4 className="suite-card-title">{t.suiteVisualTitle}</h4>
-                      <p className="suite-card-desc">{t.suiteVisualDesc}</p>
-                    </div>
-                  </div>
-
-                  <div className="suite-controls-grid">
-                    <div className="settings-row" style={{ padding: '0.6rem 0' }}>
-                      <div>
-                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.earconsToggleTitle}</h5>
-                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>{t.earconsToggleDesc}</p>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button
-                          type="button"
-                          className="btn-a11y-pill-test"
-                          onClick={() => playEarcon('select')}
-                          title="Test Earcon sound ping"
-                        >
-                          🔊 Test Earcon
-                        </button>
-                        <label className="toggle-switch">
-                          <input
-                            type="checkbox"
-                            checked={earconsEnabled}
-                            onChange={(e) => {
-                              const val = e.target.checked;
-                              setEarconsEnabled(val);
-                              if (val) playEarcon('success');
-                            }}
-                          />
-                          <span className="slider round" />
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="settings-row" style={{ padding: '0.6rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div>
-                        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{t.audioDescToggleTitle}</h5>
-                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem' }}>{t.audioDescToggleDesc}</p>
-                      </div>
-                      <label className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={audioDescriptionsEnabled}
-                          onChange={(e) => setAudioDescriptionsEnabled(e.target.checked)}
-                        />
-                        <span className="slider round" />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SUITE 2: Motor & Mobility Impairment Access */}
+                {/* SUITE 1: Motor & Mobility Impairment Access */}
                 <div className="disability-suite-card">
                   <div className="suite-card-header">
                     <div className="suite-card-icon-wrap" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>
@@ -5530,9 +5429,7 @@ Passage: (The 2-3 spoken sentences)`;
                           type="checkbox"
                           checked={switchAccessEnabled}
                           onChange={(e) => {
-                            const val = e.target.checked;
-                            setSwitchAccessEnabled(val);
-                            if (val && earconsEnabled) playEarcon('select');
+                            setSwitchAccessEnabled(e.target.checked);
                           }}
                         />
                         <span className="slider round" />
@@ -5571,7 +5468,7 @@ Passage: (The 2-3 spoken sentences)`;
                   </div>
                 </div>
 
-                {/* SUITE 3: Hearing Impaired & Deaf Access */}
+                {/* SUITE 2: Hearing Impaired & Deaf Access */}
                 <div className="disability-suite-card">
                   <div className="suite-card-header">
                     <div className="suite-card-icon-wrap" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7' }}>
@@ -5663,7 +5560,7 @@ Passage: (The 2-3 spoken sentences)`;
                   </div>
                 </div>
 
-                {/* SUITE 4: Cognitive & Neurodiversity Suite */}
+                {/* SUITE 3: Cognitive & Neurodiversity Suite */}
                 <div className="disability-suite-card">
                   <div className="suite-card-header">
                     <div className="suite-card-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
@@ -6020,7 +5917,6 @@ Passage: (The 2-3 spoken sentences)`;
         className="btn-floating-a11y"
         onClick={() => {
           setIsA11yModalOpen(true);
-          if (earconsEnabled) playEarcon('nav');
         }}
         title="Universal Accessibility Suite (Alt + A)"
         aria-haspopup="dialog"
@@ -6030,7 +5926,7 @@ Passage: (The 2-3 spoken sentences)`;
         <span className="a11y-kbd-chip">Alt+A</span>
       </button>
 
-      {/* 7. Quick Accessibility Palette Modal */}
+      {/* Quick Accessibility Palette Modal */}
       {isA11yModalOpen && (
         <div
           className="a11y-quick-palette-backdrop"
@@ -6065,32 +5961,7 @@ Passage: (The 2-3 spoken sentences)`;
             </p>
 
             <div className="a11y-quick-toggles-grid">
-              {/* Feature 1: Blind & Audio Earcons */}
-              <div className="a11y-quick-tile">
-                <div className="quick-tile-info">
-                  <div className="quick-tile-icon" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
-                    <Eye size={18} />
-                  </div>
-                  <div>
-                    <h5 style={{ margin: 0 }}>Audio Earcon Pings</h5>
-                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Sound cues for navigation</span>
-                  </div>
-                </div>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={earconsEnabled}
-                    onChange={(e) => {
-                      const v = e.target.checked;
-                      setEarconsEnabled(v);
-                      if (v) playEarcon('success');
-                    }}
-                  />
-                  <span className="slider round" />
-                </label>
-              </div>
-
-              {/* Feature 2: Switch Access Scanning */}
+              {/* Feature 1: Switch Access Scanning */}
               <div className="a11y-quick-tile">
                 <div className="quick-tile-info">
                   <div className="quick-tile-icon" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>
@@ -6106,9 +5977,7 @@ Passage: (The 2-3 spoken sentences)`;
                     type="checkbox"
                     checked={switchAccessEnabled}
                     onChange={(e) => {
-                      const v = e.target.checked;
-                      setSwitchAccessEnabled(v);
-                      if (v && earconsEnabled) playEarcon('select');
+                      setSwitchAccessEnabled(e.target.checked);
                     }}
                   />
                   <span className="slider round" />
