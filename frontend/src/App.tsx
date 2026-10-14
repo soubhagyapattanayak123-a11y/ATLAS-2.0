@@ -83,8 +83,35 @@ export function App() {
     }, 3500);
   };
 
+  // Listen for Network Mode toggles across components
+  useEffect(() => {
+    const handleNetworkModeChanged = (e: any) => {
+      const isNowOffline = !!e.detail?.offline;
+      if (isNowOffline) {
+        const offlineUser = api.getOfflineUser();
+        setActiveUserStorageId(offlineUser.id);
+        setUser(offlineUser);
+        addToast('Switched to Offline Mode (Zero Internet)', 'success');
+      } else {
+        addToast('Switched to Online Mode', 'success');
+      }
+      loadData();
+    };
+    window.addEventListener('atlas_network_mode_changed', handleNetworkModeChanged);
+    return () => window.removeEventListener('atlas_network_mode_changed', handleNetworkModeChanged);
+  }, []);
+
   // Check existing session token on mount
   useEffect(() => {
+    if (api.isOfflineMode()) {
+      const offlineUser = api.getOfflineUser();
+      setActiveUserStorageId(offlineUser.id);
+      setUser(offlineUser);
+      setAcademicTab('home');
+      setCurrentView('dashboard');
+      return;
+    }
+
     if (api.getToken()) {
       api.getMe()
         .then((userData) => {
@@ -112,6 +139,27 @@ export function App() {
   // Initial load & Polling
   const loadData = async () => {
     try {
+      if (api.isOfflineMode()) {
+        const [healthData, statsData, itemsData] = await Promise.all([
+          api.getHealth().catch(() => null),
+          api.getStats().catch(() => null),
+          api.getItems({
+            status: statusFilter,
+            category: categoryFilter,
+            priority: priorityFilter,
+            search: search.trim() || undefined,
+          }).catch(() => []),
+        ]);
+        if (healthData) {
+          setHealth(healthData);
+        }
+        setHealthError(false);
+        if (statsData) setStats(statsData);
+        setItems(itemsData);
+        setLoading(false);
+        return;
+      }
+
       const [healthData, statsData, itemsData] = await Promise.all([
         api.getHealth().catch(() => null),
         api.getStats().catch(() => null),
@@ -133,7 +181,9 @@ export function App() {
       if (statsData) setStats(statsData);
       setItems(itemsData);
     } catch {
-      addToast('Failed to sync with backend', 'error');
+      if (!api.isOfflineMode()) {
+        addToast('Failed to sync with backend', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -142,6 +192,10 @@ export function App() {
   useEffect(() => {
     loadData();
     const interval = setInterval(() => {
+      if (api.isOfflineMode()) {
+        setHealthError(false);
+        return;
+      }
       api.getHealth()
         .then((h) => {
           setHealth(h);

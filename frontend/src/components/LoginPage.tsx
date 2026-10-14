@@ -22,10 +22,14 @@ import {
   RotateCcw,
   ShieldCheck,
   ArrowLeft,
+  WifiOff,
+  Globe,
+  Download,
 } from 'lucide-react';
 import { api } from '../api';
 import type { User, LoginCredentials, RegisterData } from '../types';
 import { playWelcomeSound } from '../utils/soundEffects';
+import { DownloadCachedAppModal } from './DownloadCachedAppModal';
 
 interface LoginPageProps {
   currentUser: User | null;
@@ -52,6 +56,45 @@ export function LoginPage({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
+
+  // Online / Offline Network Mode State
+  const [networkMode, setNetworkMode] = useState<'online' | 'offline'>(() => {
+    return api.isOfflineMode() ? 'offline' : 'online';
+  });
+  const [offlineName, setOfflineName] = useState<string>(() => {
+    return api.getOfflineUser()?.full_name || 'ATLAS Scholar';
+  });
+  const [offlineGrade, setOfflineGrade] = useState<string>('Class 10');
+  const [offlineAvatar, setOfflineAvatar] = useState<string>('🎓');
+
+  useEffect(() => {
+    const handleModeChange = (e: any) => {
+      setNetworkMode(e.detail?.offline ? 'offline' : 'online');
+    };
+    window.addEventListener('atlas_network_mode_changed', handleModeChange);
+    return () => window.removeEventListener('atlas_network_mode_changed', handleModeChange);
+  }, []);
+
+  const handleNetworkModeSwitch = (target: 'online' | 'offline') => {
+    setNetworkMode(target);
+    api.setOfflineMode(target === 'offline');
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+  const handleLaunchOffline = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
+    const chosenName = offlineName.trim() || 'ATLAS Scholar';
+    const authRes = api.loginOffline(`${chosenName} (${offlineGrade})`);
+    playWelcomeSound();
+    setSuccessMessage(`Welcome, ${authRes.user.full_name}! Launching Offline Workspace...`);
+    setTimeout(() => {
+      onLoginSuccess(authRes.user);
+    }, 300);
+  };
 
   // Sign-Up Step States
   const [signupStep, setSignupStep] = useState<'form' | 'otp'>('form');
@@ -470,16 +513,60 @@ export function LoginPage({
         {/* Right Side: Logged-in session box */}
         <div className="login-form-panel">
           <div className="login-form-container">
-            <h2 className="form-main-heading">Active Session</h2>
-            <p className="form-main-subtitle">You are already authenticated</p>
+            {/* Network Mode Switcher Pill */}
+            <div className="network-mode-switcher-row" style={{ marginBottom: '1.25rem' }}>
+              <div className="network-mode-toggle-pill" role="tablist">
+                <button
+                  type="button"
+                  id="btn-session-online"
+                  className={`network-toggle-tab ${!api.isOfflineMode() ? 'active-online' : ''}`}
+                  onClick={() => {
+                    if (api.isOfflineMode()) {
+                      api.setOfflineMode(false);
+                      onLogout();
+                    }
+                  }}
+                >
+                  <Globe size={14} className="toggle-tab-icon" />
+                  <span className="toggle-tab-text">Online Mode</span>
+                  <span className="toggle-tab-badge online">Cloud AI</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-session-offline"
+                  className={`network-toggle-tab ${api.isOfflineMode() ? 'active-offline' : ''}`}
+                  onClick={() => {
+                    if (!api.isOfflineMode()) {
+                      handleNetworkModeSwitch('offline');
+                      onLogout();
+                    }
+                  }}
+                >
+                  <WifiOff size={14} className="toggle-tab-icon" />
+                  <span className="toggle-tab-text">Offline Mode</span>
+                  <span className="toggle-tab-badge offline">Zero Net</span>
+                </button>
+              </div>
+            </div>
 
-            <div className="active-user-card">
-              <div className="active-user-avatar">
-                {currentUser.full_name ? currentUser.full_name.charAt(0).toUpperCase() : currentUser.username.charAt(0).toUpperCase()}
+            <h2 className="form-main-heading">
+              {api.isOfflineMode() ? 'Offline Session Active' : 'Active Online Session'}
+            </h2>
+            <p className="form-main-subtitle">
+              {api.isOfflineMode()
+                ? 'You are currently studying offline on this browser without internet.'
+                : 'You are authenticated with cloud database & OpenRouter AI.'}
+            </p>
+
+            <div className="active-user-card" style={api.isOfflineMode() ? { borderColor: 'rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.05)' } : {}}>
+              <div className="active-user-avatar" style={api.isOfflineMode() ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)' } : {}}>
+                {api.isOfflineMode() ? '⚡' : (currentUser.full_name ? currentUser.full_name.charAt(0).toUpperCase() : currentUser.username.charAt(0).toUpperCase())}
               </div>
               <div className="active-user-meta">
                 <span className="active-user-name">{currentUser.full_name || currentUser.username}</span>
-                <span className="active-user-role">{currentUser.role} • {currentUser.email}</span>
+                <span className="active-user-role">
+                  {api.isOfflineMode() ? 'Local Scholar • Offline Engine' : `${currentUser.role} • ${currentUser.email}`}
+                </span>
               </div>
             </div>
 
@@ -493,16 +580,59 @@ export function LoginPage({
               <ArrowRight size={18} />
             </button>
 
+            {api.isOfflineMode() ? (
+              <button
+                type="button"
+                className="btn-google-auth"
+                onClick={() => {
+                  api.setOfflineMode(false);
+                  onLogout();
+                }}
+                style={{ marginTop: '0.85rem' }}
+              >
+                <Globe size={16} />
+                <span>Switch to Online Mode (Sign In / Register)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn-google-auth"
+                onClick={() => {
+                  handleNetworkModeSwitch('offline');
+                  onLogout();
+                }}
+                style={{ marginTop: '0.85rem' }}
+              >
+                <WifiOff size={16} />
+                <span>Switch to Offline Workspace (No Internet)</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="btn-google-auth"
+              onClick={() => setIsDownloadModalOpen(true)}
+              style={{ marginTop: '0.5rem', borderColor: 'rgba(99, 102, 241, 0.3)', color: '#4f46e5' }}
+            >
+              <Download size={16} />
+              <span>Download / Install Cached App</span>
+            </button>
+
             <button
               type="button"
               className="btn-google-auth"
               onClick={onLogout}
-              style={{ marginTop: '0.85rem' }}
+              style={{ marginTop: '0.5rem', color: '#94a3b8' }}
             >
               <span>Sign Out of Account</span>
             </button>
           </div>
         </div>
+
+        <DownloadCachedAppModal
+          isOpen={isDownloadModalOpen}
+          onClose={() => setIsDownloadModalOpen(false)}
+        />
       </div>
     );
   }
@@ -566,13 +696,253 @@ export function LoginPage({
       {/* ========================================================= */}
       <div className="login-form-panel">
         <div className="login-form-container">
-          <h2 className="form-main-heading">
-            {mode === 'forgot_password'
-              ? 'Reset Password'
-              : mode === 'login'
-              ? 'Login'
-              : 'Sign Up'}
-          </h2>
+          {/* Top Download Cached App Quick Bar */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+            <button
+              type="button"
+              id="btn-quick-download-app"
+              onClick={() => setIsDownloadModalOpen(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '999px',
+                background: 'rgba(99, 102, 241, 0.08)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                color: '#4f46e5',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+              title="Download or Install Cached App for Mobile & Laptop"
+            >
+              <Download size={14} />
+              <span>Download Cached App (Mobile & Laptop)</span>
+            </button>
+          </div>
+
+          {/* Network Mode Switcher Pill */}
+          <div className="network-mode-switcher-row">
+            <div className="network-mode-toggle-pill" role="tablist" aria-label="Network Mode">
+              <button
+                type="button"
+                id="btn-mode-online"
+                role="tab"
+                aria-selected={networkMode === 'online'}
+                className={`network-toggle-tab ${networkMode === 'online' ? 'active-online' : ''}`}
+                onClick={() => handleNetworkModeSwitch('online')}
+              >
+                <Globe size={15} className="toggle-tab-icon" />
+                <span className="toggle-tab-text">Online Mode</span>
+                <span className="toggle-tab-badge online">Cloud AI</span>
+              </button>
+
+              <button
+                type="button"
+                id="btn-mode-offline"
+                role="tab"
+                aria-selected={networkMode === 'offline'}
+                className={`network-toggle-tab ${networkMode === 'offline' ? 'active-offline' : ''}`}
+                onClick={() => handleNetworkModeSwitch('offline')}
+              >
+                <WifiOff size={15} className="toggle-tab-icon" />
+                <span className="toggle-tab-text">Offline Mode</span>
+                <span className="toggle-tab-badge offline">Zero Net</span>
+              </button>
+            </div>
+          </div>
+
+          {networkMode === 'offline' ? (
+            <div className="offline-mode-workspace-panel">
+              <div className="offline-panel-header">
+                <div className="offline-header-badge">
+                  <span className="offline-pulse-dot" />
+                  <span>100% Client-Side Engine • Zero Internet Required</span>
+                </div>
+                <h2 className="form-main-heading" style={{ marginTop: '0.75rem', marginBottom: '0.35rem' }}>
+                  Offline Learning Suite
+                </h2>
+                <p className="form-main-subtitle">
+                  Bina internet ke padhai karo! Math solver, graphs, quiz arena, India map, aur voice reader sab local browser me bina server ke chalte hain.
+                </p>
+              </div>
+
+              {/* Feedback Alerts */}
+              {error && (
+                <div className="login-feedback-box error">
+                  <AlertCircle size={16} />
+                  <span>{error}</span>
+                </div>
+              )}
+              {successMessage && (
+                <div className="login-feedback-box success">
+                  <CheckCircle2 size={16} />
+                  <span>{successMessage}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleLaunchOffline} className="offline-launch-form">
+                {/* Student Profile Input */}
+                <div className="login-input-group">
+                  <label className="login-input-label" htmlFor="offline-student-name">
+                    Student / Learner Name
+                  </label>
+                  <div className="login-input-wrapper">
+                    <span className="input-leading-icon" style={{ fontSize: '1.15rem' }}>{offlineAvatar}</span>
+                    <input
+                      id="offline-student-name"
+                      type="text"
+                      className="login-text-input"
+                      value={offlineName}
+                      onChange={(e) => setOfflineName(e.target.value)}
+                      placeholder="e.g. Rahul Sharma"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Grade / Target Quick Select */}
+                <div className="login-input-group">
+                  <label className="login-input-label">Academic Level / Target Exam</label>
+                  <div className="offline-grade-chips">
+                    {['Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12', 'JEE / NEET', 'Competitive'].map((g) => (
+                      <button
+                        type="button"
+                        key={g}
+                        className={`offline-grade-chip ${offlineGrade === g ? 'active' : ''}`}
+                        onClick={() => setOfflineGrade(g)}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Avatar Quick Select */}
+                <div className="login-input-group">
+                  <label className="login-input-label">Choose Avatar Icon</label>
+                  <div className="offline-avatar-row">
+                    {['🎓', '🚀', '🧠', '🔬', '⚡', '🌟', '📚', '🎯'].map((emoji) => (
+                      <button
+                        type="button"
+                        key={emoji}
+                        className={`offline-avatar-btn ${offlineAvatar === emoji ? 'active' : ''}`}
+                        onClick={() => setOfflineAvatar(emoji)}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Offline Features Matrix Grid */}
+                <div className="offline-features-showcase">
+                  <div className="offline-feature-pill">
+                    <span className="offline-feature-icon">➗</span>
+                    <div className="offline-feature-info">
+                      <strong>Deterministic Math Engine</strong>
+                      <span>Algebra, Trig, Roots, Quadratic & Geometry</span>
+                    </div>
+                  </div>
+
+                  <div className="offline-feature-pill">
+                    <span className="offline-feature-icon">📈</span>
+                    <div className="offline-feature-info">
+                      <strong>2D & 3D Function Visualizer</strong>
+                      <span>Real-time function plotters with zero latency</span>
+                    </div>
+                  </div>
+
+                  <div className="offline-feature-pill">
+                    <span className="offline-feature-icon">⚔️</span>
+                    <div className="offline-feature-info">
+                      <strong>Battle of Brains Quiz Arena</strong>
+                      <span>Local science, history, geography & math duels</span>
+                    </div>
+                  </div>
+
+                  <div className="offline-feature-pill">
+                    <span className="offline-feature-icon">🗺️</span>
+                    <div className="offline-feature-info">
+                      <strong>Interactive India Map</strong>
+                      <span>Vector map exploration of states, capitals & rivers</span>
+                    </div>
+                  </div>
+
+                  <div className="offline-feature-pill">
+                    <span className="offline-feature-icon">🔊</span>
+                    <div className="offline-feature-info">
+                      <strong>Multilingual Voice Reader</strong>
+                      <span>Browser WebSpeech API (English, Hindi, Odia)</span>
+                    </div>
+                  </div>
+
+                  <div className="offline-feature-pill">
+                    <span className="offline-feature-icon">💾</span>
+                    <div className="offline-feature-info">
+                      <strong>Local Offline Database</strong>
+                      <span>All flashcards & study notes persist in browser</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Launch Button */}
+                <button
+                  type="submit"
+                  id="btn-launch-offline-mode"
+                  className="btn-login-submit offline-btn"
+                  style={{ marginTop: '1.25rem' }}
+                >
+                  <Zap size={18} />
+                  <span>Start Learning Offline (No Internet Needed)</span>
+                  <ArrowRight size={18} />
+                </button>
+
+                {/* Download Cached Version Action Button */}
+                <button
+                  type="button"
+                  id="btn-download-cached-app-offline"
+                  className="btn-download-cached-action"
+                  onClick={() => setIsDownloadModalOpen(true)}
+                  style={{
+                    width: '100%',
+                    marginTop: '0.65rem',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    color: '#fbbf24',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Download size={16} />
+                  <span>Download Cached Version (Mobile & Laptop)</span>
+                </button>
+              </form>
+
+              <div className="offline-mode-footer-tip">
+                <ShieldCheck size={15} color="var(--accent-emerald)" />
+                <span>
+                  All questions, solved problems and notes are stored strictly inside your local browser.
+                </span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h2 className="form-main-heading">
+                {mode === 'forgot_password'
+                  ? 'Reset Password'
+                  : mode === 'login'
+                  ? 'Login'
+                  : 'Sign Up'}
+              </h2>
           <p className="form-main-subtitle">
             {mode === 'forgot_password'
               ? (forgotStep === 'code'
@@ -1329,8 +1699,15 @@ export function LoginPage({
               </span>
             )}
           </div>
+            </>
+          )}
         </div>
       </div>
+
+      <DownloadCachedAppModal
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
+      />
     </div>
   );
 }

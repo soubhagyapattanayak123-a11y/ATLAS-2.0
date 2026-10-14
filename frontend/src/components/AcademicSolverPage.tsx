@@ -32,6 +32,8 @@ import {
   Pause,
   Square,
   Palette,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import type { User, ItemStats, FlashcardItem, LearningActivity, ActivityType, DailyVoiceTopic } from '../types';
 import { api, logLearningActivity, loadAllLearningActivities } from '../api';
@@ -57,6 +59,7 @@ import { StudyCastPodcastStudio } from './StudyCastPodcastStudio';
 import { KnowledgeGraphExplorer } from './KnowledgeGraphExplorer';
 import { BattleOfBrainsArena } from './BattleOfBrainsArena';
 import { MathGraphVisualizer } from './MathGraphVisualizer';
+import { DownloadCachedAppModal } from './DownloadCachedAppModal';
 
 export type AcademicActiveTab =
   | 'home'
@@ -118,6 +121,17 @@ export function AcademicSolverPage({
   }, [controlledActiveTab, initialTab]);
 
   const [liveStats, setLiveStats] = useState<ItemStats | null>(externalStats || null);
+
+  const [isOffline, setIsOffline] = useState<boolean>(() => api.isOfflineMode());
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleModeChange = (e: any) => {
+      setIsOffline(!!e.detail?.offline);
+    };
+    window.addEventListener('atlas_network_mode_changed', handleModeChange);
+    return () => window.removeEventListener('atlas_network_mode_changed', handleModeChange);
+  }, []);
 
   useEffect(() => {
     if (externalStats) {
@@ -1911,6 +1925,40 @@ Passage: (The 2-3 spoken sentences)`;
 
           {/* User Account / Navigation Shortcuts */}
           <div className="academic-header-actions">
+            {/* Quick Online / Offline Mode Toggle Header Action */}
+            <button
+              id="header-btn-network-toggle"
+              type="button"
+              className={`btn-academic-subtle btn-network-mode-header ${isOffline ? 'offline' : 'online'}`}
+              onClick={() => {
+                const nextMode = !isOffline;
+                api.setOfflineMode(nextMode);
+                if (!nextMode && !api.getToken()) {
+                  onNavigateToAuth?.();
+                }
+              }}
+              title={isOffline ? "Currently running in Offline Mode (Zero Internet). Click to switch to Online." : "Currently in Online Mode (Cloud Backend & AI). Click to switch to Offline."}
+            >
+              {isOffline ? <WifiOff size={15} style={{ color: '#f59e0b' }} /> : <Wifi size={15} style={{ color: '#10b981' }} />}
+              <span className="network-header-label" style={{ fontWeight: 600 }}>
+                {isOffline ? 'Offline Mode' : 'Online Mode'}
+              </span>
+            </button>
+
+            {/* Quick Download Cached App Button */}
+            <button
+              id="header-btn-download-cached"
+              type="button"
+              className="btn-academic-subtle btn-download-header"
+              onClick={() => setIsDownloadModalOpen(true)}
+              title="Download or Install Cached App for Mobile & Laptop"
+            >
+              <Download size={15} style={{ color: '#06b6d4' }} />
+              <span className="network-header-label" style={{ fontWeight: 600 }}>
+                Download App
+              </span>
+            </button>
+
             {/* Quick Theme Toggle Header Action */}
             <button
               id="header-btn-theme-toggle"
@@ -2230,16 +2278,16 @@ Passage: (The 2-3 spoken sentences)`;
                         fontWeight: 600,
                         padding: '3px 10px',
                         borderRadius: '999px',
-                        background: 'rgba(16, 185, 129, 0.12)',
-                        color: '#065f46',
-                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        background: isOffline ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                        color: isOffline ? '#b45309' : '#065f46',
+                        border: isOffline ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '5px',
                       }}
                     >
-                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                      {t.dbStatusBadge}
+                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: isOffline ? '#f59e0b' : '#10b981', display: 'inline-block' }} />
+                      {isOffline ? '⚡ Offline Mode (Local Storage)' : t.dbStatusBadge}
                     </span>
                   </div>
                   <p className="welcome-banner-subtitle">
@@ -5087,6 +5135,11 @@ Passage: (The 2-3 spoken sentences)`;
           </button>
         </div>
       )}
+
+      <DownloadCachedAppModal
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
+      />
     </div>
   );
 }
