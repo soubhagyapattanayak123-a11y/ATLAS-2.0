@@ -5837,7 +5837,7 @@ Passage: (The 2-3 spoken sentences)`;
         >
           <div className="caption-content">
             <span className="caption-badge">CC</span>
-            <span className="caption-speaker">{currentCaption.speaker}:</span>
+            <span className="caption-speaker">{currentCaption.speaker || 'Atlas Voice'}:</span>
             <span className="caption-text">
               {currentCaption.text ||
                 (selectedLanguage === 'Odia'
